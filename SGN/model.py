@@ -1,7 +1,6 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
 from torch import nn
-from torch.nn import init
 import torch
 import math
 
@@ -15,9 +14,9 @@ class SGN(nn.Module):
         self.seg = seg
         num_joint = 25
         bs = batch_size
-        self.spa = self.one_hot(bs, num_joint, self.seg)
+        self.spa = self.one_hot(bs*5, num_joint, self.seg)
         self.spa = self.spa.permute(0, 3, 2, 1).cuda()
-        self.tem = self.one_hot(bs, self.seg, num_joint)
+        self.tem = self.one_hot(bs*5, self.seg, num_joint)
         self.tem = self.tem.permute(0, 3, 1, 2).cuda()
         self.tem_embed = embed(self.seg, 64*4, norm=False, bias=bias)
         self.spa_embed = embed(num_joint, 64, norm=False, bias=bias)
@@ -29,6 +28,7 @@ class SGN(nn.Module):
         self.gcn1 = gcn_spa(self.dim1 // 2, self.dim1 // 2, bias=bias)
         self.gcn2 = gcn_spa(self.dim1 // 2, self.dim1, bias=bias)
         self.gcn3 = gcn_spa(self.dim1, self.dim1, bias=bias)
+        self.fc = nn.Linear(self.dim1 * 2, num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -38,13 +38,6 @@ class SGN(nn.Module):
         nn.init.constant_(self.gcn1.w.cnn.weight, 0)
         nn.init.constant_(self.gcn2.w.cnn.weight, 0)
         nn.init.constant_(self.gcn3.w.cnn.weight, 0)
-
-        # Initialize weights for local layer
-        for layer in [self.cnn.cnn1, self.cnn.cnn2]:
-            init.xavier_normal_(layer.weight)
-            if layer.bias is not None:
-                init.constant_(layer.bias, 0)
-
 
     def forward(self, input):
         # Dynamic Representation
@@ -69,11 +62,10 @@ class SGN(nn.Module):
         # Frame-level Module
         input = input + tem1
         input = self.cnn(input)
-
-        # Formerly classification, now just taking an embedding
+        # Classification
         output = self.maxpool(input)
         output = torch.flatten(output, 1)
-        # output = self.fc(output)
+        output = self.fc(output)
 
         return output
 
@@ -125,18 +117,9 @@ class embed(nn.Module):
                 nn.ReLU(),
             )
 
-        self._initialize_weights()
-
     def forward(self, x):
         x = self.cnn(x)
         return x
-    
-    def _initialize_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.xavier_normal_(m.weight)
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
 
 
 class cnn1x1(nn.Module):
