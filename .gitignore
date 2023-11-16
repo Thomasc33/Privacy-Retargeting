@@ -2,3 +2,6 @@ NTU/X.pkl
 .conda
 SGN/__pycache__/
 results/
+mlruns/
+pretrained/
+training_stages_log/

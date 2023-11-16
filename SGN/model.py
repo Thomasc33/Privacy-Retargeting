@@ -14,10 +14,17 @@ class SGN(nn.Module):
         self.seg = seg
         num_joint = 25
         bs = batch_size
-        self.spa = self.one_hot(bs*5, num_joint, self.seg)
-        self.spa = self.spa.permute(0, 3, 2, 1).cuda()
-        self.tem = self.one_hot(bs*5, self.seg, num_joint)
-        self.tem = self.tem.permute(0, 3, 1, 2).cuda()
+        if train:
+            self.spa = self.one_hot(bs, num_joint, self.seg)
+            self.spa = self.spa.permute(0, 3, 2, 1).cuda()
+            self.tem = self.one_hot(bs, self.seg, num_joint)
+            self.tem = self.tem.permute(0, 3, 1, 2).cuda()
+        else:
+            self.spa = self.one_hot(bs * 5, num_joint, self.seg)
+            self.spa = self.spa.permute(0, 3, 2, 1).cuda()
+            self.tem = self.one_hot(bs * 5, self.seg, num_joint)
+            self.tem = self.tem.permute(0, 3, 1, 2).cuda()
+
         self.tem_embed = embed(self.seg, 64*4, norm=False, bias=bias)
         self.spa_embed = embed(num_joint, 64, norm=False, bias=bias)
         self.joint_embed = embed(3, 64, norm=True, bias=bias)
