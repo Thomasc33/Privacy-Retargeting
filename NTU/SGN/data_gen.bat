@@ -1,0 +1,3 @@
+python get_raw_skes_data.py
+python get_raw_denoised_data.py
+python seq_transformation.py
