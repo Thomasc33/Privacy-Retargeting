@@ -3,7 +3,9 @@ NTU/X.pkl
 SGN/__pycache__/
 results/
 mlruns/
-pretrained/
+/pretrained/
+SGN/SGN/pretrained/
+SGN/pretrained/*.txt
 training_stages_log/
 NTU/SGN/denoised_data/
 NTU/SGN/nturgb+d_skeletons/
