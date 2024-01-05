@@ -28,11 +28,11 @@ def get_num_classes(dataset, case):
         return 120
     elif case == 2:
         return 106
+    elif case == 3:
+        return 40
+    elif case == 4:
+        return 60
     else:
         return 2
-    # if dataset == 'NTU':
-    #     return 2
-    # elif dataset == 'NTU120':
-    #     return 2
 
     
