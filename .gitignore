@@ -10,3 +10,4 @@ NTU/SGN/denoised_data/
 NTU/SGN/nturgb+d_skeletons/
 NTU/SGN/*.pkl
 NTU/SGN/raw_data/
+pretrained/*/
