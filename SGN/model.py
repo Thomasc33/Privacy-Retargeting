@@ -13,16 +13,16 @@ class SGN(nn.Module):
         self.dataset = dataset
         self.seg = seg
         num_joint = 25
-        bs = batch_size
+        self.bs = batch_size
         if train:
-            self.spa = self.one_hot(bs, num_joint, self.seg)
+            self.spa = self.one_hot(self.bs, num_joint, self.seg)
             self.spa = self.spa.permute(0, 3, 2, 1).cuda()
-            self.tem = self.one_hot(bs, self.seg, num_joint)
+            self.tem = self.one_hot(self.bs, self.seg, num_joint)
             self.tem = self.tem.permute(0, 3, 1, 2).cuda()
         else:
-            self.spa = self.one_hot(bs * 5, num_joint, self.seg)
+            self.spa = self.one_hot(self.bs * 5, num_joint, self.seg)
             self.spa = self.spa.permute(0, 3, 2, 1).cuda()
-            self.tem = self.one_hot(bs * 5, self.seg, num_joint)
+            self.tem = self.one_hot(self.bs * 5, self.seg, num_joint)
             self.tem = self.tem.permute(0, 3, 1, 2).cuda()
 
         self.tem_embed = embed(self.seg, 64*4, norm=False, bias=bias)
@@ -88,12 +88,21 @@ class SGN(nn.Module):
         y_onehot = y_onehot.repeat(bs, tem, 1, 1)
 
         return y_onehot
+    
+    def eval_single(self, x):
+        self.spa = self.one_hot(1, 25, self.seg)
+        self.spa = self.spa.permute(0, 3, 2, 1).cuda()
+        self.tem = self.one_hot(1, self.seg, 25)
+        self.tem = self.tem.permute(0, 3, 1, 2).cuda()
+
+        return self.forward(x)
+
 
 
 class norm_data(nn.Module):
     def __init__(self, dim=64):
         super(norm_data, self).__init__()
-
+        self.dim = dim
         self.bn = nn.BatchNorm1d(dim * 25)
 
     def forward(self, x):
