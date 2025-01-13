@@ -49,6 +49,12 @@ class SGN(nn.Module):
     def forward(self, input):
         # Dynamic Representation
         bs, step, dim = input.size()
+
+        self.spa = self.one_hot(bs, 25, self.seg)
+        self.spa = self.spa.permute(0, 3, 2, 1).cuda()
+        self.tem = self.one_hot(bs, self.seg, 25)
+        self.tem = self.tem.permute(0, 3, 1, 2).cuda()
+
         num_joints = dim // 3
         input = input.view((bs, step, num_joints, 3))
         input = input.permute(0, 3, 2, 1).contiguous()
