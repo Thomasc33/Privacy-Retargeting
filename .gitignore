@@ -11,3 +11,5 @@ NTU/SGN/nturgb+d_skeletons/
 NTU/SGN/*.pkl
 NTU/SGN/raw_data/
 pretrained/*/
+model/
+graph/
