@@ -79,7 +79,7 @@ def get_raw_bodies_data(skes_path, ske_name, frames_drop_skes, frames_drop_logge
     assert num_frames_drop < num_frames, \
         'Error: All frames data (%d) of %s is missing or lost' % (num_frames, ske_name)
     if num_frames_drop > 0:
-        frames_drop_skes[ske_name] = np.array(frames_drop, dtype=np.int)
+        frames_drop_skes[ske_name] = np.array(frames_drop, dtype=np.int32)
         frames_drop_logger.info('{}: {} frames missed: {}\n'.format(ske_name, num_frames_drop,
                                                                     frames_drop))
 
@@ -111,7 +111,7 @@ def get_raw_skes_data():
     print('Found %d available skeleton files.' % num_files)
 
     raw_skes_data = []
-    frames_cnt = np.zeros(num_files, dtype=np.int)
+    frames_cnt = np.zeros(num_files, dtype=np.int32)
 
     for (idx, ske_name) in enumerate(skes_name):
         bodies_data = get_raw_bodies_data(skes_path, ske_name, frames_drop_skes, frames_drop_logger)
@@ -134,7 +134,7 @@ def get_raw_skes_data():
 if __name__ == '__main__':
     save_path = './'
 
-    skes_path = './nturgb+d_skeletons/'
+    skes_path = './raw_skeletons'
     stat_path = osp.join(save_path, 'statistics')
     if not osp.exists('./raw_data'):
         os.makedirs('./raw_data')
