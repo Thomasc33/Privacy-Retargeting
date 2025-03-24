@@ -13,3 +13,4 @@ NTU/SGN/raw_data/
 pretrained/*/
 model/
 graph/
+*.DS_Store
