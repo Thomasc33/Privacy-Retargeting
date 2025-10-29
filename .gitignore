@@ -1,16 +1,49 @@
+# Data files
 NTU/X.pkl
-.conda
-SGN/__pycache__/
-results/
-mlruns/
-SGN/SGN/pretrained/
-SGN/pretrained/*.txt
-training_stages_log/
 NTU/SGN/denoised_data/
 NTU/SGN/nturgb+d_skeletons/
 NTU/SGN/*.pkl
 NTU/SGN/raw_data/
+*.pkl
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Training outputs
+results/
+mlruns/
+checkpoints/
+training_stages_log/
+logs/
+*.log
+
+# Model files
 pretrained/*/
 model/
 graph/
-*.DS_Store
+*.pt
+*.pth
+!pretrained/*.pt
+
+# Conda
+.conda
+
+# SGN specific
+SGN/__pycache__/
+SGN/SGN/pretrained/
+SGN/pretrained/*.txt
