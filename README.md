@@ -213,3 +213,22 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 This project is licensed under the MIT License.
 
+## 📚 Citation
+
+**Published at ICCV 2025** - International Conference on Computer Vision
+
+If you use this work in your research, please cite:
+
+```bibtex
+@InProceedings{Carr_2025_ICCV,
+    author    = {Carr, Thomas and Xu, Depeng and Yuan, Shuhan and Lu, Aidong},
+    title     = {Privacy-centric Deep Motion Retargeting for Anonymization of Skeleton-Based Motion Visualization},
+    booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+    month     = {October},
+    year      = {2025},
+    pages     = {13162-13170}
+}
+```
+
+**Paper:** [CVF Open Access](https://openaccess.thecvf.com/content/ICCV2025/papers/Carr_Privacy-centric_Deep_Motion_Retargeting_for_Anonymization_of_Skeleton-Based_Motion_Visualization_ICCV_2025_paper.pdf)
+
