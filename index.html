@@ -13,7 +13,27 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Mermaid for diagrams -->
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        window.mermaid = mermaid;
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            themeVariables: {
+                primaryColor: '#6366f1',
+                primaryTextColor: '#e4e4e7',
+                primaryBorderColor: '#8b5cf6',
+                lineColor: '#a1a1aa',
+                secondaryColor: '#8b5cf6',
+                tertiaryColor: '#1e2442',
+                background: '#151932',
+                mainBkg: '#151932',
+                secondBkg: '#1e2442',
+                textColor: '#e4e4e7',
+                fontSize: '16px'
+            }
+        });
+    </script>
     
     <style>
         :root {
@@ -246,12 +266,17 @@
         }
 
         .tab-content {
-            display: none;
+            visibility: hidden;
+            height: 0;
+            overflow: hidden;
+            position: absolute;
             animation: fadeIn 0.5s;
         }
 
         .tab-content.active {
-            display: block;
+            visibility: visible;
+            height: auto;
+            position: relative;
         }
 
         @keyframes fadeIn {
@@ -433,6 +458,7 @@
                 <li><a href="#architecture">Architecture</a></li>
                 <li><a href="#results">Results</a></li>
                 <li><a href="#usage">Usage</a></li>
+                <li><a href="#citation">Citation</a></li>
                 <li><a href="https://github.com/Thomasc33/Privacy-Retargeting" target="_blank">
                     <i class="fab fa-github"></i> GitHub
                 </a></li>
@@ -444,8 +470,15 @@
     <div class="hero">
         <h1>Privacy-centric Motion Retargeting</h1>
         <p class="subtitle">Anonymizing skeleton-based motion data while preserving action utility through adversarial deep learning</p>
+        <div style="margin: 1rem 0; padding: 0.75rem 1.5rem; background: rgba(99, 102, 241, 0.15); border-radius: 8px; display: inline-block;">
+            <i class="fas fa-award" style="color: var(--accent-primary); margin-right: 0.5rem;"></i>
+            <strong style="color: var(--accent-primary);">ICCV 2025</strong> - International Conference on Computer Vision
+        </div>
         <div class="hero-buttons">
-            <a href="https://github.com/Thomasc33/Privacy-Retargeting" class="btn btn-primary">
+            <a href="https://openaccess.thecvf.com/content/ICCV2025/papers/Carr_Privacy-centric_Deep_Motion_Retargeting_for_Anonymization_of_Skeleton-Based_Motion_Visualization_ICCV_2025_paper.pdf" class="btn btn-primary" target="_blank">
+                <i class="fas fa-file-pdf"></i> Read Paper
+            </a>
+            <a href="https://github.com/Thomasc33/Privacy-Retargeting" class="btn btn-secondary" target="_blank">
                 <i class="fab fa-github"></i> View on GitHub
             </a>
             <a href="#usage" class="btn btn-secondary">
@@ -508,50 +541,41 @@
 
             <div id="overview-tab" class="tab-content active">
                 <div class="mermaid">
-graph TB
-    subgraph Input
-        S[Original Skeleton]
-        D[Dummy Skeleton]
-    end
-
-    subgraph Encoders
-        EM[Motion Encoder E_M<br/>Captures Action Info]
-        EP[Privacy Encoder E_P<br/>Captures Identity Info]
-    end
-
-    subgraph Decoder
-        DEC[Decoder D<br/>Reconstructs Skeleton]
-    end
-
-    subgraph Classifiers
-        M[Motion Classifier M<br/>Predicts Action]
-        P[Privacy Classifier P<br/>Predicts Actor ID]
-        Q[Quality Controller Q<br/>Real vs Fake]
-    end
-
-    S --> EM
-    S --> EP
-    D --> EP
-
-    EM --> DEC
-    EP --> DEC
-
-    EM -.Cooperative.-> M
-    EP -.Adversarial.-> M
-
-    EP -.Cooperative.-> P
-    EM -.Adversarial.-> P
-
-    DEC --> Q
-    DEC --> OUT[Anonymized Skeleton]
-
-    style EM fill:#6366f1
-    style EP fill:#8b5cf6
-    style DEC fill:#10b981
-    style M fill:#f59e0b
-    style P fill:#f59e0b
-    style Q fill:#ef4444
-    style OUT fill:#10b981
+flowchart TB
+subgraph Input
+S[Original Skeleton]
+D[Dummy Skeleton]
+end
+subgraph Encoders
+EM[Motion Encoder]
+EP[Privacy Encoder]
+end
+subgraph Decoder
+DEC[Decoder]
+end
+subgraph Classifiers
+M[Motion Classifier]
+P[Privacy Classifier]
+Q[Quality Controller]
+end
+S --> EM
+S --> EP
+D --> EP
+EM --> DEC
+EP --> DEC
+EM -.-> M
+EP -.-> M
+EP -.-> P
+EM -.-> P
+DEC --> Q
+DEC --> OUT[Anonymized Skeleton]
+style EM fill:#6366f1
+style EP fill:#8b5cf6
+style DEC fill:#10b981
+style M fill:#f59e0b
+style P fill:#f59e0b
+style Q fill:#ef4444
+style OUT fill:#10b981
                 </div>
                 <p style="text-align: center; color: var(--text-secondary); margin-top: 1rem;">
                     PMR architecture showing the flow from input skeletons through encoders, decoder, and classifiers to produce anonymized output.
@@ -559,81 +583,131 @@ graph TB
             </div>
 
             <div id="dataflow-tab" class="tab-content">
+                <h3 style="margin-bottom: 1rem;">Cross-Reconstruction Data Flow</h3>
                 <div class="mermaid">
-sequenceDiagram
-    participant Original as Original Skeleton
-    participant EM as Motion Encoder
-    participant EP as Privacy Encoder
-    participant D as Decoder
-    participant Output as Anonymized Skeleton
+flowchart LR
+    A[Original Skeleton]
+    B[Motion Embedding]
+    C[Dummy Skeleton]
+    D[Privacy Embedding]
+    E[Decoder]
+    F[Anonymized Skeleton]
 
-    Note over Original: User's skeleton with PII
-    Original->>EM: Extract motion features
-    Note over EM: Action-specific<br/>temporal patterns
+    A --> B
+    C --> D
+    B --> E
+    D --> E
+    E --> F
 
-    Note over Original: Dummy skeleton
-    Original->>EP: Extract privacy features
-    Note over EP: Body shape,<br/>gait style
+    style A fill:#6366f1
+    style B fill:#6366f1
+    style C fill:#8b5cf6
+    style D fill:#8b5cf6
+    style E fill:#10b981
+    style F fill:#10b981
 
-    EM->>D: Motion embedding
-    EP->>D: Privacy embedding
-
-    Note over D: Concatenate embeddings<br/>and reconstruct
-
-    D->>Output: Generate skeleton
-    Note over Output: Original motion +<br/>Dummy identity
                 </div>
+                <p style="text-align: center; color: var(--text-secondary); margin-top: 1rem; margin-bottom: 2rem;">
+                    Motion from original skeleton (via E<sub>M</sub>), privacy/structure from dummy skeleton (via E<sub>P</sub>).
+                </p>
+
+                <h3 style="margin-bottom: 1rem;">Cooperative and Adversarial Training</h3>
+                <div class="mermaid">
+flowchart LR
+    S[Skeleton] --> EM[Motion Encoder]
+    S --> EP[Privacy Encoder]
+
+    EM -->|Cooperative| M[Motion Classifier]
+    EM -.->|Adversarial| P[Privacy Classifier]
+
+    EP -->|Cooperative| P
+    EP -.->|Adversarial| M
+
+    EM --> D[Decoder]
+    EP --> D
+    D --> Q[Quality Controller]
+    D --> OUT[Output]
+
+    style S fill:#6366f1
+    style EM fill:#6366f1
+    style EP fill:#8b5cf6
+    style M fill:#f59e0b
+    style P fill:#f59e0b
+    style D fill:#10b981
+    style Q fill:#ef4444
+    style OUT fill:#10b981
+                </div>
+                <p style="text-align: center; color: var(--text-secondary); margin-top: 1rem;">
+                    <strong>Cooperative (solid):</strong> E<sub>M</sub> ↔ M (motion), E<sub>P</sub> ↔ P (privacy)<br>
+                    <strong>Adversarial (dashed):</strong> E<sub>M</sub> ⟷ P, E<sub>P</sub> ⟷ M<br>
+                    This disentangles motion from identity information.
+                </p>
             </div>
 
             <div id="training-tab" class="tab-content">
-                <div class="mermaid">
-graph LR
-    subgraph Stage1[Stage 1: Autoencoder Warm-up]
-        S1A[5 Paired Epochs]
-        S1B[20 Unpaired Epochs]
-    end
-
-    subgraph Stage2[Stage 2: Classifier Pre-training]
-        S2A[20 Paired Epochs]
-        S2B[50 Unpaired Epochs]
-    end
-
-    subgraph Stage3[Stage 3: Adversarial Training]
-        S3[100 Unpaired Epochs<br/>Cooperative + Adversarial]
-    end
-
-    subgraph Stage4[Stage 4: Motion Retargeting]
-        S4[100 Paired Epochs<br/>Cross-reconstruction]
-    end
-
-    S1A --> S1B
-    S1B --> S2A
-    S2A --> S2B
-    S2B --> S3
-    S3 --> S4
-
-    style Stage1 fill:#6366f1
-    style Stage2 fill:#8b5cf6
-    style Stage3 fill:#f59e0b
-    style Stage4 fill:#10b981
-                </div>
-                <div style="margin-top: 2rem;">
-                    <h3 style="margin-bottom: 1rem;">Training Stages Explained</h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; margin-bottom: 2rem;">
                     <div class="card">
-                        <h4>Stage 1: Autoencoder Warm-up</h4>
-                        <p>Trains encoders (E_M, E_P) and decoder (D) to reconstruct skeletons using reconstruction and smoothness losses. Establishes basic motion understanding.</p>
+                        <h4 style="margin-bottom: 1rem; text-align: center;">Stage 1: Autoencoder Warm-up</h4>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
+                            <div style="background: #6366f1; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">E<sub>M</sub><br>TRAIN</div>
+                            <div style="background: #8b5cf6; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">E<sub>P</sub><br>TRAIN</div>
+                            <div style="background: #10b981; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">D<br>TRAIN</div>
+                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">M<br>FROZEN</div>
+                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">P<br>FROZEN</div>
+                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">Q<br>FROZEN</div>
+                        </div>
+                        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
+                            <strong>25 epochs (5 paired + 20 unpaired)</strong><br>
+                            Trains encoders and decoder to reconstruct skeletons using reconstruction and smoothness losses.
+                        </p>
                     </div>
-                    <div class="card" style="margin-top: 1rem;">
-                        <h4>Stage 2: Classifier Pre-training</h4>
-                        <p>Pre-trains motion classifier (M) and privacy classifier (P) on frozen encoder embeddings. Prepares classifiers for adversarial training.</p>
+
+                    <div class="card">
+                        <h4 style="margin-bottom: 1rem; text-align: center;">Stage 2: Classifier Pre-training</h4>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
+                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">E<sub>M</sub><br>FROZEN</div>
+                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">E<sub>P</sub><br>FROZEN</div>
+                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">D<br>FROZEN</div>
+                            <div style="background: #f59e0b; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">M<br>TRAIN</div>
+                            <div style="background: #f59e0b; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">P<br>TRAIN</div>
+                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">Q<br>FROZEN</div>
+                        </div>
+                        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
+                            <strong>70 epochs (20 paired + 50 unpaired)</strong><br>
+                            Pre-trains motion and privacy classifiers on frozen encoder embeddings.
+                        </p>
                     </div>
-                    <div class="card" style="margin-top: 1rem;">
-                        <h4>Stage 3: Unpaired Cooperative-Adversarial</h4>
-                        <p>Unfreezes encoders and trains with cooperative and adversarial losses. M cooperates with E_M but adversarially trains against E_P, and vice versa for P.</p>
+
+                    <div class="card">
+                        <h4 style="margin-bottom: 1rem; text-align: center;">Stage 3: Adversarial Training</h4>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
+                            <div style="background: #6366f1; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">E<sub>M</sub><br>TRAIN</div>
+                            <div style="background: #8b5cf6; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">E<sub>P</sub><br>TRAIN</div>
+                            <div style="background: #10b981; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">D<br>TRAIN</div>
+                            <div style="background: #f59e0b; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">M<br>TRAIN</div>
+                            <div style="background: #f59e0b; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">P<br>TRAIN</div>
+                            <div style="background: #ef4444; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">Q<br>TRAIN</div>
+                        </div>
+                        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
+                            <strong>100 epochs (unpaired)</strong><br>
+                            Cooperative and adversarial training. M cooperates with E<sub>M</sub> but adversarially trains against E<sub>P</sub>, and vice versa for P.
+                        </p>
                     </div>
-                    <div class="card" style="margin-top: 1rem;">
-                        <h4>Stage 4: Paired Motion Retargeting</h4>
-                        <p>Cross-reconstruction with triplet loss, latent consistency, and end-effector losses. Fine-tunes for anonymization quality.</p>
+
+                    <div class="card">
+                        <h4 style="margin-bottom: 1rem; text-align: center;">Stage 4: Motion Retargeting</h4>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
+                            <div style="background: #6366f1; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">E<sub>M</sub><br>TRAIN</div>
+                            <div style="background: #8b5cf6; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">E<sub>P</sub><br>TRAIN</div>
+                            <div style="background: #10b981; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">D<br>TRAIN</div>
+                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">M<br>FROZEN</div>
+                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">P<br>FROZEN</div>
+                            <div style="background: #ef4444; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">Q<br>TRAIN</div>
+                        </div>
+                        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
+                            <strong>100 epochs (paired)</strong><br>
+                            Cross-reconstruction with triplet loss, latent consistency, and end-effector losses. Fine-tunes for anonymization quality.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -641,37 +715,55 @@ graph LR
             <div id="components-tab" class="tab-content">
                 <div class="card-grid">
                     <div class="card">
-                        <h3>Motion Encoder (E_M)</h3>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                            <h3 style="margin: 0;">Motion Encoder</h3>
+                            <span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 0.25rem 0.75rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; font-weight: 600;">E<sub>M</sub></span>
+                        </div>
                         <p><strong>Purpose:</strong> Extract action-specific temporal information</p>
                         <p><strong>Architecture:</strong> 4-layer CNN with reflection padding and max pooling</p>
                         <p><strong>Output:</strong> Motion embedding (256 × 32)</p>
                     </div>
                     <div class="card">
-                        <h3>Privacy Encoder (E_P)</h3>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                            <h3 style="margin: 0;">Privacy Encoder</h3>
+                            <span style="background: linear-gradient(135deg, #8b5cf6, #a855f7); color: white; padding: 0.25rem 0.75rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; font-weight: 600;">E<sub>P</sub></span>
+                        </div>
                         <p><strong>Purpose:</strong> Extract skeleton structure and style (PII)</p>
-                        <p><strong>Architecture:</strong> Identical to E_M but serves different purpose</p>
+                        <p><strong>Architecture:</strong> Identical to E<sub>M</sub> but serves different purpose</p>
                         <p><strong>Output:</strong> Privacy embedding (256 × 32)</p>
                     </div>
                     <div class="card">
-                        <h3>Decoder (D)</h3>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                            <h3 style="margin: 0;">Decoder</h3>
+                            <span style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 0.25rem 0.75rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; font-weight: 600;">D</span>
+                        </div>
                         <p><strong>Purpose:</strong> Reconstruct skeleton from embeddings</p>
                         <p><strong>Architecture:</strong> 4-layer transpose CNN with upsampling</p>
                         <p><strong>Input:</strong> Concatenated embeddings (512 × 32)</p>
                     </div>
                     <div class="card">
-                        <h3>Motion Classifier (M)</h3>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                            <h3 style="margin: 0;">Motion Classifier</h3>
+                            <span style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 0.25rem 0.75rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; font-weight: 600;">M</span>
+                        </div>
                         <p><strong>Purpose:</strong> Predict action from embeddings</p>
-                        <p><strong>Training:</strong> Cooperative with E_M, adversarial with E_P</p>
+                        <p><strong>Training:</strong> Cooperative with E<sub>M</sub>, adversarial with E<sub>P</sub></p>
                         <p><strong>Output:</strong> Action probabilities (60 or 120 classes)</p>
                     </div>
                     <div class="card">
-                        <h3>Privacy Classifier (P)</h3>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                            <h3 style="margin: 0;">Privacy Classifier</h3>
+                            <span style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 0.25rem 0.75rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; font-weight: 600;">P</span>
+                        </div>
                         <p><strong>Purpose:</strong> Predict actor ID from embeddings</p>
-                        <p><strong>Training:</strong> Cooperative with E_P, adversarial with E_M</p>
+                        <p><strong>Training:</strong> Cooperative with E<sub>P</sub>, adversarial with E<sub>M</sub></p>
                         <p><strong>Output:</strong> Actor probabilities (40 or 106 classes)</p>
                     </div>
                     <div class="card">
-                        <h3>Quality Controller (Q)</h3>
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                            <h3 style="margin: 0;">Quality Controller</h3>
+                            <span style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 0.25rem 0.75rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; font-weight: 600;">Q</span>
+                        </div>
                         <p><strong>Purpose:</strong> Distinguish real vs generated skeletons</p>
                         <p><strong>Architecture:</strong> GAN-style discriminator</p>
                         <p><strong>Output:</strong> Real/fake probability</p>
@@ -723,10 +815,10 @@ graph LR
                                 <td>0.0834</td>
                                 <td>2.6%</td>
                                 <td>11.1%</td>
-                                <td class="highlight">3.0%</td>
+                                <td>3.0%</td>
                                 <td>26.8%</td>
-                                <td class="highlight">3.0%</td>
-                                <td class="highlight">50.0%</td>
+                                <td>3.0%</td>
+                                <td>50.0%</td>
                             </tr>
                             <tr>
                                 <td><strong>ResNet (Moon et al.)</strong></td>
@@ -740,22 +832,22 @@ graph LR
                             </tr>
                             <tr>
                                 <td><strong>DMR (Baseline)</strong></td>
-                                <td class="highlight">0.0071</td>
-                                <td class="highlight">49.1%</td>
-                                <td class="highlight">73.1%</td>
+                                <td>0.0071</td>
+                                <td>49.1%</td>
+                                <td>73.1%</td>
                                 <td>25.7%</td>
                                 <td>60.3%</td>
                                 <td>25.7%</td>
-                                <td class="highlight">50.0%</td>
+                                <td>50.0%</td>
                             </tr>
                             <tr style="background: rgba(99, 102, 241, 0.1);">
                                 <td><strong>PMR (Ours)</strong></td>
-                                <td>0.0138</td>
-                                <td><span class="highlight">35.7%</span></td>
-                                <td><span class="highlight">63.0%</span></td>
-                                <td><span class="highlight">7.8%</span></td>
-                                <td><span class="highlight">26.4%</span></td>
-                                <td><span class="highlight">7.8%</span></td>
+                                <td class="highlight">0.0138</td>
+                                <td class="highlight">35.7%</td>
+                                <td class="highlight">63.0%</td>
+                                <td class="highlight">7.8%</td>
+                                <td class="highlight">26.4%</td>
+                                <td class="highlight">7.8%</td>
                                 <td class="highlight">50.0%</td>
                             </tr>
                         </tbody>
@@ -764,22 +856,22 @@ graph LR
 
                 <div style="margin-top: 3rem;">
                     <h3 style="margin-bottom: 1.5rem;">Key Findings</h3>
-                    <div class="card-grid">
-                        <div class="card">
-                            <h4>🎯 Optimal Privacy-Utility Trade-off</h4>
-                            <p>PMR achieves the best balance between privacy protection (7.8% Top-1 re-ID) and utility preservation (35.7% Top-1 action recognition).</p>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+                        <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 4px solid #6366f1; padding: 1.5rem; border-radius: 8px;">
+                            <h4 style="margin: 0 0 0.75rem 0; color: #6366f1;">Optimal Privacy-Utility Trade-off</h4>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.95rem;">PMR achieves the best balance between privacy protection (7.8% Top-1 re-ID) and utility preservation (35.7% Top-1 action recognition).</p>
                         </div>
-                        <div class="card">
-                            <h4>📊 Superior to Baselines</h4>
-                            <p>Outperforms UNet by 13.7× in action recognition (35.7% vs 2.6%) while maintaining strong privacy protection.</p>
+                        <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.05)); border-left: 4px solid #8b5cf6; padding: 1.5rem; border-radius: 8px;">
+                            <h4 style="margin: 0 0 0.75rem 0; color: #8b5cf6;">Superior to Baselines</h4>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.95rem;">Outperforms UNet by 13.7× in action recognition (35.7% vs 2.6%) while maintaining strong privacy protection.</p>
                         </div>
-                        <div class="card">
-                            <h4>🔒 Strong Privacy Guarantees</h4>
-                            <p>Reduces re-identification from 87.8% to 7.8% (Top-1) and linkage attacks to random chance (50.0%).</p>
+                        <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05)); border-left: 4px solid #10b981; padding: 1.5rem; border-radius: 8px;">
+                            <h4 style="margin: 0 0 0.75rem 0; color: #10b981;">Strong Privacy Guarantees</h4>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.95rem;">Reduces re-identification from 87.8% to 7.8% (Top-1) and linkage attacks to random chance (50.0%).</p>
                         </div>
-                        <div class="card">
-                            <h4>⚡ Low Reconstruction Error</h4>
-                            <p>MSE of 0.0138 ensures visually plausible skeletons while anonymizing identity, balancing between DMR (0.0071) and Moon's methods (0.0834+).</p>
+                        <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05)); border-left: 4px solid #ef4444; padding: 1.5rem; border-radius: 8px;">
+                            <h4 style="margin: 0 0 0.75rem 0; color: #ef4444;">Low Reconstruction Error</h4>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.95rem;">MSE of 0.0138 ensures visually plausible skeletons while anonymizing identity, balancing between DMR (0.0071) and Moon's methods (0.0834+).</p>
                         </div>
                     </div>
                 </div>
@@ -897,12 +989,27 @@ graph LR
                         </tbody>
                     </table>
                 </div>
-                <p style="margin-top: 1.5rem; color: var(--text-secondary);">
-                    <strong>Key Insights:</strong> Removing M & P classifiers (adversarial training) significantly degrades privacy (15.8% re-ID vs 7.8%).
-                    The smoothness loss is critical for maintaining action recognition quality.
-                    Latent consistency and quality controller both contribute to the optimal privacy-utility balance.
-                    Without any of these components, re-ID increases above the full model's 7.8%.
-                </p>
+                <div style="margin-top: 2rem;">
+                    <h4 style="margin-bottom: 1rem;">Key Insights</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                        <div style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid #6366f1; padding: 1rem; border-radius: 8px;">
+                            <h5 style="margin: 0 0 0.5rem 0; color: #6366f1; font-size: 0.95rem;">Adversarial Training Critical</h5>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Removing M & P classifiers increases re-ID from 7.8% to 15.8%, showing adversarial training is essential for privacy.</p>
+                        </div>
+                        <div style="background: rgba(139, 92, 246, 0.1); border-left: 4px solid #8b5cf6; padding: 1rem; border-radius: 8px;">
+                            <h5 style="margin: 0 0 0.5rem 0; color: #8b5cf6; font-size: 0.95rem;">Smoothness Loss Matters</h5>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Without L_smooth, action recognition drops to 27.4%, indicating smoothness is critical for temporal coherence.</p>
+                        </div>
+                        <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; padding: 1rem; border-radius: 8px;">
+                            <h5 style="margin: 0 0 0.5rem 0; color: #10b981; font-size: 0.95rem;">Latent Consistency Helps</h5>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Removing L_latent increases re-ID to 12.6%, showing it helps maintain the privacy-utility balance.</p>
+                        </div>
+                        <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; padding: 1rem; border-radius: 8px;">
+                            <h5 style="margin: 0 0 0.5rem 0; color: #ef4444; font-size: 0.95rem;">Quality Controller Improves Realism</h5>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Without Q, re-ID increases to 9.3%, showing the quality controller helps prevent identity leakage.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -1133,17 +1240,17 @@ trainer.train()</pre>
                         </tr>
                         <tr>
                             <td>Cross-reconstruction</td>
-                            <td>2.0</td>
+                            <td>0.1</td>
                             <td>Motion transfer quality</td>
                         </tr>
                         <tr>
                             <td>Triplet</td>
-                            <td>0.5</td>
+                            <td>1.0</td>
                             <td>Embedding space structure</td>
                         </tr>
                         <tr>
                             <td>Latent Consistency</td>
-                            <td>0.5</td>
+                            <td>10.0</td>
                             <td>Consistent embeddings across views</td>
                         </tr>
                         <tr>
@@ -1158,11 +1265,53 @@ trainer.train()</pre>
                         </tr>
                         <tr>
                             <td>Quality Controller</td>
-                            <td>0.1</td>
+                            <td>0.5</td>
                             <td>Realistic skeleton generation</td>
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </section>
+
+        <!-- Citation Section -->
+        <section id="citation" style="margin-top: 4rem;">
+            <h2 class="section-title">Citation</h2>
+            <p class="section-subtitle">If you use this work in your research, please cite our ICCV 2025 paper</p>
+
+            <div style="margin-top: 2rem;">
+                <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; position: relative;">
+                    <button onclick="copyBibtex()" style="position: absolute; top: 1rem; right: 1rem; background: var(--accent-primary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; transition: all 0.3s ease;">
+                        <i class="fas fa-copy"></i> Copy BibTeX
+                    </button>
+                    <pre id="bibtex-code" style="margin: 0; padding: 1rem; background: rgba(0, 0, 0, 0.3); border-radius: 8px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 0.875rem; line-height: 1.6; color: var(--text-primary);"><code>@InProceedings{Carr_2025_ICCV,
+    author    = {Carr, Thomas and Xu, Depeng and Yuan, Shuhan and Lu, Aidong},
+    title     = {Privacy-centric Deep Motion Retargeting for Anonymization of Skeleton-Based Motion Visualization},
+    booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+    month     = {October},
+    year      = {2025},
+    pages     = {13162-13170}
+}</code></pre>
+                </div>
+
+                <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(99, 102, 241, 0.1); border-left: 4px solid var(--accent-primary); border-radius: 8px;">
+                    <h4 style="margin: 0 0 0.5rem 0; color: var(--accent-primary);">
+                        <i class="fas fa-book"></i> Publication Details
+                    </h4>
+                    <p style="margin: 0.5rem 0; color: var(--text-secondary);">
+                        <strong>Conference:</strong> IEEE/CVF International Conference on Computer Vision (ICCV) 2025
+                    </p>
+                    <p style="margin: 0.5rem 0; color: var(--text-secondary);">
+                        <strong>Pages:</strong> 13162-13170
+                    </p>
+                    <p style="margin: 0.5rem 0; color: var(--text-secondary);">
+                        <strong>Date:</strong> October 2025
+                    </p>
+                    <p style="margin: 0.5rem 0;">
+                        <a href="https://openaccess.thecvf.com/content/ICCV2025/papers/Carr_Privacy-centric_Deep_Motion_Retargeting_for_Anonymization_of_Skeleton-Based_Motion_Visualization_ICCV_2025_paper.pdf" target="_blank" style="color: var(--accent-primary); text-decoration: none;">
+                            <i class="fas fa-external-link-alt"></i> View on CVF Open Access
+                        </a>
+                    </p>
+                </div>
             </div>
         </section>
     </div>
@@ -1195,25 +1344,6 @@ trainer.train()</pre>
     </footer>
 
     <script>
-        // Initialize Mermaid
-        mermaid.initialize({
-            startOnLoad: true,
-            theme: 'dark',
-            themeVariables: {
-                primaryColor: '#6366f1',
-                primaryTextColor: '#e4e4e7',
-                primaryBorderColor: '#8b5cf6',
-                lineColor: '#a1a1aa',
-                secondaryColor: '#8b5cf6',
-                tertiaryColor: '#1e2442',
-                background: '#151932',
-                mainBkg: '#151932',
-                secondBkg: '#1e2442',
-                textColor: '#e4e4e7',
-                fontSize: '16px'
-            }
-        });
-
         // Tab switching function
         function switchTab(event, tabId) {
             // Get the parent section
@@ -1236,6 +1366,34 @@ trainer.train()</pre>
 
             // Add active class to clicked tab
             event.currentTarget.classList.add('active');
+        }
+
+        // Copy BibTeX to clipboard
+        function copyBibtex() {
+            const bibtexCode = document.getElementById('bibtex-code').textContent;
+            const button = event.currentTarget;
+
+            // Create a temporary textarea to copy from
+            const textarea = document.createElement('textarea');
+            textarea.value = bibtexCode;
+            document.body.appendChild(textarea);
+            textarea.select();
+
+            try {
+                document.execCommand('copy');
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                button.style.background = '#10b981';
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.style.background = 'var(--accent-primary)';
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard');
+            } finally {
+                document.body.removeChild(textarea);
+            }
         }
 
         // Smooth scrolling for navigation links
