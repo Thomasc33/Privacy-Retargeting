@@ -102,16 +102,14 @@ class TrainingConfig:
 @dataclass
 class EvaluationConfig:
     """Evaluation settings"""
-    # Pretrained model paths
-    sgn_action_model_path: str = 'SGN/pretrained/action_recognition.pt'
-    sgn_reid_model_path: str = 'SGN/pretrained/reidentification.pt'
-    sgn_gender_model_path: str = 'SGN/pretrained/gender_classification.pt'
-    
+    # Pretrained SGN model paths (auto-trained if missing)
+    sgn_action_model_path: str = 'SGN/pretrained/action_60.pt'
+    sgn_reid_model_path: str = 'SGN/pretrained/privacy_60.pt'
+
     # Evaluation metrics
     compute_mse: bool = True
     compute_action_recognition: bool = True
     compute_reidentification: bool = True
-    compute_gender_classification: bool = True
     compute_linkage_attack: bool = True
     
     # Dummy skeleton settings
@@ -146,6 +144,8 @@ def get_ntu120_config():
     config.data.data_path = 'ntu/SGN/X_full_120.pkl'
     config.model.utility_classes = 120
     config.model.privacy_classes = 106
+    config.evaluation.sgn_action_model_path = 'SGN/pretrained/action_120.pt'
+    config.evaluation.sgn_reid_model_path = 'SGN/pretrained/privacy_120.pt'
     return config
 
 

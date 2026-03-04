@@ -14,9 +14,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from configs.default_config import get_default_config, get_ntu120_config, get_dmr_config
-from training.trainer import PMRTrainer
-from utils.visualization import visualize_skeleton, create_comparison_video
-from utils.data_loader import load_ntu_data
 
 
 @click.group()
@@ -72,6 +69,8 @@ def train(dataset, model, epochs, batch_size, lr, device, checkpoint_dir, resume
     config.training.checkpoint_dir = checkpoint_dir
     config.training.use_mlflow = use_mlflow
     
+    from training.trainer import PMRTrainer
+
     # Initialize trainer
     trainer = PMRTrainer(config)
     
@@ -104,13 +103,17 @@ def train(dataset, model, epochs, batch_size, lr, device, checkpoint_dir, resume
 def evaluate(model_path, dataset, output, device):
     """Evaluate a trained model"""
     click.echo(f"📊 Evaluating model: {model_path}")
-    
+
     from training.evaluator import PMREvaluator
-    
+    from SGN.train import ensure_sgn_models
+
     # Load configuration
     config = get_ntu120_config() if dataset == 'ntu120' else get_default_config()
     config.training.device = device
-    
+
+    # Ensure SGN evaluation models exist (train if missing)
+    ensure_sgn_models(config, device)
+
     # Initialize evaluator
     evaluator = PMREvaluator(config, model_path)
     
@@ -221,8 +224,29 @@ def compare(original, anonymized, output):
     with open(anonymized, 'rb') as f:
         anon_data = pickle.load(f)
     
+    from utils.visualization import create_comparison_video
     create_comparison_video(orig_data, anon_data, output)
     click.echo(f"✅ Comparison video saved to: {output}")
+
+
+@cli.command('train-sgn')
+@click.option('--task', type=click.Choice(['action', 'privacy']), required=True,
+              help='Training task: action recognition or privacy/re-id')
+@click.option('--dataset', type=click.Choice(['ntu60', 'ntu120']), default='ntu60',
+              help='Dataset variant')
+@click.option('--data-path', default='NTU/X.pkl',
+              help='Path to NTU X.pkl data file')
+@click.option('--device', default='cuda:0',
+              help='Device to use')
+@click.option('--output', default=None,
+              help='Override output path for checkpoint')
+def train_sgn(task, dataset, data_path, device, output):
+    """Train an SGN evaluation model (Cross-View split)"""
+    from SGN.train import train_sgn_model
+
+    click.echo(f"Training SGN {task} model on {dataset.upper()} (Cross-View split)")
+    path = train_sgn_model(task, dataset, data_path, device, output_path=output)
+    click.echo(f"Model saved to: {path}")
 
 
 @cli.command()
