@@ -27,7 +27,7 @@ NTU60_FILE_ID="1CUZnBtYwifVXS21yVg62T-vrPVayso5H"
 NTU120_FILE_ID="1tEbuaEqMxAV7dNc4fqu1O4M7mC6CJ50w"
 
 step_num=0
-total_steps=6
+total_steps=5
 
 step() {
     step_num=$((step_num + 1))
@@ -53,9 +53,8 @@ echo -e "${DIM}This script will:${NC}"
 echo -e "${DIM}  1. Install Python $PYTHON_VERSION via pyenv (if needed)${NC}"
 echo -e "${DIM}  2. Create a virtual environment${NC}"
 echo -e "${DIM}  3. Install all Python dependencies${NC}"
-echo -e "${DIM}  4. Download NTU RGB+D skeleton data from Google Drive${NC}"
-echo -e "${DIM}  5. Extract and organize skeleton files${NC}"
-echo -e "${DIM}  6. Validate the environment${NC}"
+echo -e "${DIM}  4. Download and extract NTU RGB+D skeleton data${NC}"
+echo -e "${DIM}  5. Validate the environment${NC}"
 echo ""
 
 ask "Continue? [Y/n] "
@@ -154,6 +153,9 @@ step "Installing Python dependencies"
 info "Upgrading pip..."
 pip install --upgrade pip --quiet
 
+info "Installing gdown (needed for data download)..."
+pip install 'gdown>=5.1.0' --quiet
+
 info "Installing from requirements.txt..."
 pip install -r "$PROJECT_DIR/requirements.txt" 2>&1 | tail -5
 
@@ -172,48 +174,150 @@ print(f'  h5py      {h5py.__version__}')
 print(f'  sklearn   {sklearn.__version__}')
 "
 
-# ─── Step 4: Download NTU skeleton data ──────────────────────────────────────
-step "Downloading NTU RGB+D skeleton data"
+# ─── Step 4: Download and extract NTU skeleton data ─────────────────────────
+step "NTU RGB+D skeleton data"
 
 DOWNLOAD_DIR="$PROJECT_DIR/NTU/SGN"
 mkdir -p "$DOWNLOAD_DIR"
 
-# Ask which datasets to download
-echo ""
-echo -e "  ${BOLD}Available datasets:${NC}"
-echo -e "    ${CYAN}1${NC}) NTU RGB+D 60  (S001–S017, ~5.8 GB)"
-echo -e "    ${CYAN}2${NC}) NTU RGB+D 120 (S018–S032, ~5.5 GB)"
-echo -e "    ${CYAN}3${NC}) Both (required for full NTU-120 experiments)"
-echo ""
-ask "Which datasets to download? [1/2/3] (default: 3) "
-read -r dataset_choice
-dataset_choice="${dataset_choice:-3}"
-
-DOWNLOAD_NTU60=false
-DOWNLOAD_NTU120=false
-case "$dataset_choice" in
-    1) DOWNLOAD_NTU60=true ;;
-    2) DOWNLOAD_NTU120=true ;;
-    *) DOWNLOAD_NTU60=true; DOWNLOAD_NTU120=true ;;
-esac
-
 NTU60_ZIP="$DOWNLOAD_DIR/nturgbd_skeletons_s001_to_s017.zip"
 NTU120_ZIP="$DOWNLOAD_DIR/nturgbd_skeletons_s018_to_s032.zip"
 
+# ── Check existing skeleton files ──
+existing_skeletons=0
+ntu60_extracted=false
+ntu120_extracted=false
+if [[ -d "$SKELETON_DIR" ]]; then
+    existing_skeletons=$(find "$SKELETON_DIR" -name "*.skeleton" -type f 2>/dev/null | wc -l | tr -d ' ')
+fi
+
+if (( existing_skeletons > 0 )); then
+    # Sample files to determine which setups are present
+    setup_range=$(find "$SKELETON_DIR" -name "*.skeleton" -type f 2>/dev/null | head -5000 | \
+        sed 's|.*/S\([0-9]*\).*|\1|' | sort -un)
+    max_setup=$(echo "$setup_range" | tail -1)
+    min_setup=$(echo "$setup_range" | head -1)
+
+    if (( max_setup >= 18 )); then
+        ntu120_extracted=true
+    fi
+    if (( min_setup <= 17 )); then
+        ntu60_extracted=true
+    fi
+fi
+
+# ── Report current state and ask what to do ──
+echo ""
+if (( existing_skeletons > 0 )); then
+    info "Found ${BOLD}${existing_skeletons}${NC} existing .skeleton files in raw_skeletons/"
+    $ntu60_extracted  && info "NTU-60 data (S001–S017): ${GREEN}present${NC}"
+    $ntu60_extracted  || info "NTU-60 data (S001–S017): ${YELLOW}not found${NC}"
+    $ntu120_extracted && info "NTU-120 data (S018–S032): ${GREEN}present${NC}"
+    $ntu120_extracted || info "NTU-120 data (S018–S032): ${YELLOW}not found${NC}"
+
+    ntu60_zip_exists=false
+    ntu120_zip_exists=false
+    [[ -f "$NTU60_ZIP" ]]  && ntu60_zip_exists=true
+    [[ -f "$NTU120_ZIP" ]] && ntu120_zip_exists=true
+    $ntu60_zip_exists  && info "NTU-60 zip: ${GREEN}downloaded${NC} ($(du -sh "$NTU60_ZIP" | cut -f1))"
+    $ntu120_zip_exists && info "NTU-120 zip: ${GREEN}downloaded${NC} ($(du -sh "$NTU120_ZIP" | cut -f1))"
+
+    echo ""
+    echo -e "  ${BOLD}Options:${NC}"
+    echo -e "    ${CYAN}1${NC}) Skip — keep existing data as-is"
+    echo -e "    ${CYAN}2${NC}) Repair — re-download and re-extract only missing datasets"
+    echo -e "    ${CYAN}3${NC}) Re-download NTU-60 only (fresh)"
+    echo -e "    ${CYAN}4${NC}) Re-download NTU-120 only (fresh)"
+    echo -e "    ${CYAN}5${NC}) Re-download everything (fresh)"
+    echo ""
+    ask "Choice? [1/2/3/4/5] (default: 1) "
+    read -r data_choice
+    data_choice="${data_choice:-1}"
+
+    DOWNLOAD_NTU60=false
+    DOWNLOAD_NTU120=false
+    EXTRACT_NTU60=false
+    EXTRACT_NTU120=false
+
+    case "$data_choice" in
+        1)
+            info "Keeping existing data"
+            ;;
+        2)
+            # Repair: download/extract only what's missing
+            if ! $ntu60_extracted; then
+                DOWNLOAD_NTU60=true
+                EXTRACT_NTU60=true
+            else
+                info "NTU-60 skeletons already extracted — skipping"
+            fi
+            if ! $ntu120_extracted; then
+                DOWNLOAD_NTU120=true
+                EXTRACT_NTU120=true
+            else
+                info "NTU-120 skeletons already extracted — skipping"
+            fi
+            # If zip exists but not extracted, just extract
+            if ! $ntu60_extracted && [[ -f "$NTU60_ZIP" ]]; then
+                DOWNLOAD_NTU60=false
+                info "NTU-60 zip already downloaded — will extract"
+            fi
+            if ! $ntu120_extracted && [[ -f "$NTU120_ZIP" ]]; then
+                DOWNLOAD_NTU120=false
+                info "NTU-120 zip already downloaded — will extract"
+            fi
+            ;;
+        3) DOWNLOAD_NTU60=true;  EXTRACT_NTU60=true ;;
+        4) DOWNLOAD_NTU120=true; EXTRACT_NTU120=true ;;
+        5) DOWNLOAD_NTU60=true;  EXTRACT_NTU60=true;
+           DOWNLOAD_NTU120=true; EXTRACT_NTU120=true ;;
+        *)
+            info "Invalid choice, keeping existing data"
+            ;;
+    esac
+else
+    # No existing data — ask which datasets to download
+    [[ -f "$NTU60_ZIP" ]]  && info "NTU-60 zip found: $(du -sh "$NTU60_ZIP" | cut -f1) — will extract"
+    [[ -f "$NTU120_ZIP" ]] && info "NTU-120 zip found: $(du -sh "$NTU120_ZIP" | cut -f1) — will extract"
+
+    echo ""
+    echo -e "  ${BOLD}Available datasets:${NC}"
+    echo -e "    ${CYAN}1${NC}) NTU RGB+D 60  (S001–S017, ~5.8 GB)"
+    echo -e "    ${CYAN}2${NC}) NTU RGB+D 120 (S018–S032, ~5.5 GB)"
+    echo -e "    ${CYAN}3${NC}) Both (required for full NTU-120 experiments)"
+    echo ""
+    ask "Which datasets to download? [1/2/3] (default: 3) "
+    read -r dataset_choice
+    dataset_choice="${dataset_choice:-3}"
+
+    DOWNLOAD_NTU60=false
+    DOWNLOAD_NTU120=false
+    EXTRACT_NTU60=false
+    EXTRACT_NTU120=false
+
+    case "$dataset_choice" in
+        1) DOWNLOAD_NTU60=true;  EXTRACT_NTU60=true ;;
+        2) DOWNLOAD_NTU120=true; EXTRACT_NTU120=true ;;
+        *) DOWNLOAD_NTU60=true;  EXTRACT_NTU60=true;
+           DOWNLOAD_NTU120=true; EXTRACT_NTU120=true ;;
+    esac
+
+    # Skip download if zip already exists
+    if $DOWNLOAD_NTU60 && [[ -f "$NTU60_ZIP" ]]; then
+        info "NTU-60 zip already downloaded — skipping download"
+        DOWNLOAD_NTU60=false
+    fi
+    if $DOWNLOAD_NTU120 && [[ -f "$NTU120_ZIP" ]]; then
+        info "NTU-120 zip already downloaded — skipping download"
+        DOWNLOAD_NTU120=false
+    fi
+fi
+
+# ── Download function ──
 download_from_gdrive() {
     local file_id="$1"
     local output="$2"
     local label="$3"
-
-    if [[ -f "$output" ]]; then
-        warn "$label zip already exists: $(basename "$output")"
-        ask "Re-download? [y/N] "
-        read -r response
-        if [[ ! "$response" =~ ^[Yy] ]]; then
-            info "Skipping download of $label"
-            return 0
-        fi
-    fi
 
     info "Downloading $label from Google Drive..."
     info "File ID: $file_id"
@@ -243,26 +347,14 @@ except Exception as e:
     fi
 }
 
-if $DOWNLOAD_NTU60; then
-    download_from_gdrive "$NTU60_FILE_ID" "$NTU60_ZIP" "NTU RGB+D 60"
-fi
-
-if $DOWNLOAD_NTU120; then
-    download_from_gdrive "$NTU120_FILE_ID" "$NTU120_ZIP" "NTU RGB+D 120"
-fi
-
-# ─── Step 5: Extract and organize ───────────────────────────────────────────
-step "Extracting and organizing skeleton files"
-
-mkdir -p "$SKELETON_DIR"
-
+# ── Extract function ──
 extract_skeletons() {
     local zip_file="$1"
     local label="$2"
 
     if [[ ! -f "$zip_file" ]]; then
-        warn "Zip not found: $zip_file — skipping"
-        return 0
+        fail "Zip not found: $(basename "$zip_file") — cannot extract $label"
+        return 1
     fi
 
     info "Extracting $label..."
@@ -270,9 +362,7 @@ extract_skeletons() {
     size=$(du -sh "$zip_file" | cut -f1)
     info "Archive size: $size"
 
-    # Extract to a temp directory to inspect structure
-    local tmp_dir
-    tmp_dir=$(mktemp -d "$DOWNLOAD_DIR/extract_XXXXXX")
+    mkdir -p "$SKELETON_DIR"
 
     python3 << PYEOF
 import zipfile
@@ -281,13 +371,11 @@ import shutil
 import sys
 
 zip_path = "$zip_file"
-tmp_dir = "$tmp_dir"
 dest_dir = "$SKELETON_DIR"
 
 print(f"  Inspecting zip structure...")
 with zipfile.ZipFile(zip_path, 'r') as zf:
     names = zf.namelist()
-    total = len(names)
 
     # Determine structure: files in root vs in a subdirectory
     skeleton_files = [n for n in names if n.endswith('.skeleton')]
@@ -336,9 +424,6 @@ with zipfile.ZipFile(zip_path, 'r') as zf:
 
 PYEOF
 
-    # Clean up temp dir
-    rm -rf "$tmp_dir"
-
     # Count skeleton files
     local count
     count=$(find "$SKELETON_DIR" -name "*.skeleton" -type f 2>/dev/null | wc -l | tr -d ' ')
@@ -350,11 +435,19 @@ PYEOF
     success "Deleted $(basename "$zip_file")"
 }
 
+# ── Execute downloads ──
 if $DOWNLOAD_NTU60; then
-    extract_skeletons "$NTU60_ZIP" "NTU RGB+D 60"
+    download_from_gdrive "$NTU60_FILE_ID" "$NTU60_ZIP" "NTU RGB+D 60"
+fi
+if $DOWNLOAD_NTU120; then
+    download_from_gdrive "$NTU120_FILE_ID" "$NTU120_ZIP" "NTU RGB+D 120"
 fi
 
-if $DOWNLOAD_NTU120; then
+# ── Execute extractions ──
+if $EXTRACT_NTU60 && [[ -f "$NTU60_ZIP" ]]; then
+    extract_skeletons "$NTU60_ZIP" "NTU RGB+D 60"
+fi
+if $EXTRACT_NTU120 && [[ -f "$NTU120_ZIP" ]]; then
     extract_skeletons "$NTU120_ZIP" "NTU RGB+D 120"
 fi
 

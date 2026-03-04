@@ -1,1065 +1,537 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PMR - Privacy-centric Motion Retargeting</title>
-    <meta name="description" content="Anonymizing skeleton-based motion data while preserving action utility through adversarial deep learning">
-    
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    
-    <!-- Icons -->
+    <title>PMR — Privacy-centric Motion Retargeting</title>
+    <meta name="description" content="Anonymizing skeleton-based motion data while preserving action utility. ICCV 2025.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Mermaid for diagrams -->
-    <script type="module">
-        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-        window.mermaid = mermaid;
-        mermaid.initialize({
-            startOnLoad: true,
-            theme: 'dark',
-            themeVariables: {
-                primaryColor: '#6366f1',
-                primaryTextColor: '#e4e4e7',
-                primaryBorderColor: '#8b5cf6',
-                lineColor: '#a1a1aa',
-                secondaryColor: '#8b5cf6',
-                tertiaryColor: '#1e2442',
-                background: '#151932',
-                mainBkg: '#151932',
-                secondBkg: '#1e2442',
-                textColor: '#e4e4e7',
-                fontSize: '16px'
-            }
-        });
-    </script>
-    
     <style>
         :root {
-            --bg-primary: #0a0e27;
-            --bg-secondary: #151932;
-            --bg-tertiary: #1e2442;
-            --text-primary: #e4e4e7;
-            --text-secondary: #a1a1aa;
-            --accent-primary: #6366f1;
-            --accent-secondary: #8b5cf6;
-            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --border: #27293d;
-            --shadow: rgba(0, 0, 0, 0.3);
+            --font-display: 'Instrument Serif', Georgia, serif;
+            --font-body: 'Outfit', system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --nav-height: 64px;
+            --max-width: 1200px;
+            --transition-theme: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        [data-theme="light"] {
+            --bg: #F5F4F0; --bg-surface: #FFFFFF; --bg-elevated: #FFFFFF; --bg-code: #F0EFEB;
+            --text: #1A1A1A; --text-muted: #6B6B6B; --text-faint: #9A9A9A;
+            --accent: #0D9488; --accent-hover: #0F766E; --accent-subtle: rgba(13,148,136,0.08); --accent-border: rgba(13,148,136,0.25);
+            --rose: #E11D48; --rose-subtle: rgba(225,29,72,0.07);
+            --amber: #B45309; --amber-subtle: rgba(180,83,9,0.07);
+            --violet: #7C3AED; --violet-subtle: rgba(124,58,237,0.07);
+            --border: #E5E4E0; --border-strong: #D4D3CF;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.04); --shadow-md: 0 4px 16px rgba(0,0,0,0.06); --shadow-lg: 0 12px 40px rgba(0,0,0,0.08);
+            --nav-bg: rgba(245,244,240,0.85); --grain-opacity: 0.03;
+            --skel-orig: #E11D48; --skel-anon: #0D9488; --hl-row: rgba(13,148,136,0.06);
         }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.6;
-            overflow-x: hidden;
+        [data-theme="dark"] {
+            --bg: #0B0B0D; --bg-surface: #141416; --bg-elevated: #1C1C1F; --bg-code: #18181B;
+            --text: #ECECEC; --text-muted: #8B8B8B; --text-faint: #555555;
+            --accent: #2DD4BF; --accent-hover: #5EEAD4; --accent-subtle: rgba(45,212,191,0.08); --accent-border: rgba(45,212,191,0.2);
+            --rose: #FB7185; --rose-subtle: rgba(251,113,133,0.08);
+            --amber: #FBBF24; --amber-subtle: rgba(251,191,36,0.08);
+            --violet: #A78BFA; --violet-subtle: rgba(167,139,250,0.08);
+            --border: #27272A; --border-strong: #3F3F46;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.2); --shadow-md: 0 4px 16px rgba(0,0,0,0.3); --shadow-lg: 0 12px 40px rgba(0,0,0,0.4);
+            --nav-bg: rgba(11,11,13,0.85); --grain-opacity: 0.02;
+            --skel-orig: #FB7185; --skel-anon: #2DD4BF; --hl-row: rgba(45,212,191,0.06);
         }
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+        html{scroll-behavior:smooth;scroll-padding-top:calc(var(--nav-height) + 24px)}
+        body{font-family:var(--font-body);background:var(--bg);color:var(--text);line-height:1.65;overflow-x:hidden;transition:var(--transition-theme);-webkit-font-smoothing:antialiased}
+        body::after{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:var(--grain-opacity);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:180px}
+        a{color:var(--accent);text-decoration:none;transition:color 0.2s}a:hover{color:var(--accent-hover)}
+        img{max-width:100%;height:auto;display:block}
 
-        /* Animated background */
-        .bg-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            opacity: 0.3;
+        /* NAV */
+        nav{position:fixed;top:0;width:100%;height:var(--nav-height);background:var(--nav-bg);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--border);z-index:1000;transition:var(--transition-theme),box-shadow 0.3s}
+        nav.scrolled{box-shadow:var(--shadow-md)}
+        .nav-inner{max-width:var(--max-width);margin:0 auto;padding:0 2rem;height:100%;display:flex;align-items:center;justify-content:space-between}
+        .nav-logo{font-family:var(--font-display);font-size:1.5rem;color:var(--text);letter-spacing:-0.02em;transition:var(--transition-theme)}
+        .nav-links{display:flex;align-items:center;gap:2rem;list-style:none}
+        .nav-links a{color:var(--text-muted);font-size:0.875rem;font-weight:500;letter-spacing:0.01em;transition:color 0.2s}
+        .nav-links a:hover{color:var(--text)}
+        .theme-toggle{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--bg-surface);color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;transition:var(--transition-theme)}
+        .theme-toggle:hover{color:var(--text);border-color:var(--border-strong)}
+        .mobile-toggle{display:none;width:36px;height:36px;border:none;background:none;color:var(--text);cursor:pointer;font-size:1.25rem}
+        .nav-right{display:flex;align-items:center;gap:0.5rem}
+        #mobile-theme{display:none}
+
+        /* HERO */
+        .hero{max-width:var(--max-width);margin:0 auto;padding:calc(var(--nav-height) + 5rem) 2rem 4rem;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;min-height:85vh}
+        .hero-content{max-width:560px}
+        .hero-badge{display:inline-flex;align-items:center;gap:0.5rem;padding:0.4rem 1rem;background:var(--accent-subtle);border:1px solid var(--accent-border);border-radius:100px;font-size:0.8rem;font-weight:600;color:var(--accent);letter-spacing:0.04em;margin-bottom:1.5rem;transition:var(--transition-theme)}
+        .hero h1{font-family:var(--font-display);font-size:clamp(2.5rem,5vw,3.75rem);line-height:1.1;letter-spacing:-0.02em;color:var(--text);margin-bottom:1.25rem;transition:var(--transition-theme)}
+        .hero-sub{font-size:1.125rem;color:var(--text-muted);line-height:1.7;margin-bottom:2rem;font-weight:300;max-width:480px;transition:var(--transition-theme)}
+        .hero-actions{display:flex;gap:0.75rem;flex-wrap:wrap}
+        .btn{display:inline-flex;align-items:center;gap:0.5rem;padding:0.7rem 1.5rem;border-radius:8px;font-family:var(--font-body);font-size:0.875rem;font-weight:600;border:none;cursor:pointer;transition:all 0.25s ease;text-decoration:none}
+        .btn-primary{background:var(--accent);color:#fff}
+        [data-theme="dark"] .btn-primary{color:#0B0B0D}
+        .btn-primary:hover{background:var(--accent-hover);color:#fff;transform:translateY(-1px);box-shadow:var(--shadow-md)}
+        [data-theme="dark"] .btn-primary:hover{color:#0B0B0D}
+        .btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+        .btn-outline:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+        .hero-visual{display:flex;align-items:center;justify-content:center}
+        .hero-visual svg{width:100%;max-width:440px;height:auto}
+
+        /* Skeleton styling */
+        .skel-joint{transition:var(--transition-theme)}.skel-bone{transition:var(--transition-theme)}
+        .so .skel-joint{fill:var(--skel-orig)}.so .skel-bone{stroke:var(--skel-orig);opacity:0.5}
+        .sa .skel-joint{fill:var(--skel-anon)}.sa .skel-bone{stroke:var(--skel-anon);opacity:0.5}
+        .so{animation:breathe 5s ease-in-out infinite}.sa{animation:breathe 5s ease-in-out infinite 0.5s}
+        @keyframes breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+        .skel-label{font-family:var(--font-body);font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;transition:var(--transition-theme)}
+        .skel-arm{animation:armswing 3.5s ease-in-out infinite}
+        @keyframes armswing{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-8deg)}}
+
+        /* STATS */
+        .stats-bar{max-width:var(--max-width);margin:0 auto;padding:0 2rem 5rem}
+        .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-sm);transition:var(--transition-theme)}
+        .stat-item{background:var(--bg-surface);padding:2.5rem 2rem;text-align:center;transition:var(--transition-theme)}
+        .stat-number{font-family:var(--font-display);font-size:clamp(2.25rem,4vw,3rem);line-height:1;margin-bottom:0.5rem;letter-spacing:-0.02em;color:var(--accent)}
+        .stat-change{font-size:0.75rem;font-weight:600;color:var(--accent);margin-bottom:0.5rem;display:flex;align-items:center;justify-content:center;gap:0.25rem}
+        .stat-label{font-size:0.8rem;color:var(--text-muted);font-weight:500;letter-spacing:0.02em;transition:var(--transition-theme)}
+
+        /* SECTIONS */
+        .section{max-width:var(--max-width);margin:0 auto;padding:5rem 2rem}
+        .section-label{font-size:0.75rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:0.75rem;transition:var(--transition-theme)}
+        .section-title{font-family:var(--font-display);font-size:clamp(2rem,3.5vw,2.75rem);line-height:1.15;letter-spacing:-0.02em;margin-bottom:0.75rem;color:var(--text);transition:var(--transition-theme)}
+        .section-desc{font-size:1.05rem;color:var(--text-muted);max-width:600px;line-height:1.7;margin-bottom:3rem;font-weight:300;transition:var(--transition-theme)}
+        .divider{width:100%;height:1px;background:var(--border);max-width:var(--max-width);margin:0 auto;transition:var(--transition-theme)}
+
+        /* FEATURES */
+        .fg{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-sm);transition:var(--transition-theme)}
+        .fc{background:var(--bg-surface);padding:2rem;transition:var(--transition-theme),transform 0.3s;position:relative}
+        .fc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);opacity:0;transition:opacity 0.3s}
+        .fc:hover::before{opacity:1}.fc:hover{background:var(--bg-elevated)}
+        .fc h3{font-family:var(--font-body);font-size:1rem;font-weight:600;margin-bottom:0.5rem;color:var(--text);transition:var(--transition-theme)}
+        .fc p{font-size:0.875rem;color:var(--text-muted);line-height:1.6;transition:var(--transition-theme)}
+        .fdot{width:8px;height:8px;border-radius:50%;margin-bottom:1rem;transition:var(--transition-theme)}
+        .fdot.teal{background:var(--accent)}.fdot.rose{background:var(--rose)}.fdot.amber{background:var(--amber)}.fdot.violet{background:var(--violet)}
+
+        /* TABS */
+        .tabs-nav{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:2rem;overflow-x:auto;transition:var(--transition-theme)}
+        .tab-btn{padding:0.75rem 1.25rem;background:none;border:none;border-bottom:2px solid transparent;color:var(--text-muted);font-family:var(--font-body);font-size:0.875rem;font-weight:500;cursor:pointer;white-space:nowrap;transition:color 0.2s,border-color 0.2s;margin-bottom:-1px}
+        .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+        .tab-btn:hover:not(.active){color:var(--text)}
+        .tp{display:none;animation:tf 0.35s ease}.tp.active{display:block}
+        @keyframes tf{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+        /* ARCHITECTURE */
+        .arch-d{background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem;overflow-x:auto;transition:var(--transition-theme)}
+        .arch-flow{display:flex;align-items:center;justify-content:center;gap:1rem;min-width:700px}
+        .ab{padding:1rem 1.25rem;border-radius:10px;text-align:center;font-size:0.8rem;font-weight:600;border:1px solid;min-width:100px;transition:var(--transition-theme)}
+        .ab small{display:block;font-weight:400;opacity:0.7;margin-top:0.25rem;font-size:0.7rem}
+        .ab.inp{background:var(--bg-elevated);border-color:var(--border-strong);color:var(--text-muted)}
+        .ab.em{background:var(--accent-subtle);border-color:var(--accent-border);color:var(--accent)}
+        .ab.ep{background:var(--violet-subtle);border-color:rgba(124,58,237,0.25);color:var(--violet)}
+        .ab.dec{background:var(--accent-subtle);border-color:var(--accent-border);color:var(--accent)}
+        .ab.clf{background:var(--amber-subtle);border-color:rgba(180,83,9,0.25);color:var(--amber)}
+        [data-theme="dark"] .ab.clf{border-color:rgba(251,191,36,0.25)}
+        .ab.qc{background:var(--rose-subtle);border-color:rgba(225,29,72,0.25);color:var(--rose)}
+        .ab.out{background:var(--accent-subtle);border-color:var(--accent-border);color:var(--accent)}
+        .aarr{color:var(--text-faint);font-size:1.25rem;flex-shrink:0}
+        .acol{display:flex;flex-direction:column;gap:0.5rem;align-items:center}
+        .arch-cap{text-align:center;color:var(--text-muted);font-size:0.85rem;margin-top:1.5rem;transition:var(--transition-theme)}
+
+        /* TRAINING */
+        .sg{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-sm);transition:var(--transition-theme)}
+        .sc{background:var(--bg-surface);padding:2rem;transition:var(--transition-theme)}
+        .sn{font-family:var(--font-display);font-size:2rem;color:var(--text-faint);margin-bottom:0.25rem;transition:var(--transition-theme)}
+        .sc h4{font-size:1rem;font-weight:600;margin-bottom:1rem;color:var(--text);transition:var(--transition-theme)}
+        .sm{display:grid;grid-template-columns:repeat(3,1fr);gap:0.4rem;margin-bottom:1rem}
+        .smod{padding:0.5rem;border-radius:6px;text-align:center;font-size:0.7rem;font-weight:600;letter-spacing:0.03em}
+        .smod.ta{background:var(--accent);color:#fff}[data-theme="dark"] .smod.ta{color:#0B0B0D}
+        .smod.tv{background:var(--violet);color:#fff}
+        .smod.tw{background:var(--amber);color:#fff}[data-theme="dark"] .smod.tw{color:#0B0B0D}
+        .smod.tr{background:var(--rose);color:#fff}
+        .smod.fz{background:var(--bg-elevated);color:var(--text-faint);border:1px solid var(--border)}
+        .si{font-size:0.825rem;color:var(--text-muted);line-height:1.5;transition:var(--transition-theme)}
+        .si strong{color:var(--text);transition:var(--transition-theme)}
+
+        /* COMPONENTS */
+        .cg{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-sm);transition:var(--transition-theme)}
+        .cc{background:var(--bg-surface);padding:1.75rem;transition:var(--transition-theme)}
+        .ct{display:inline-flex;padding:0.2rem 0.6rem;border-radius:4px;font-family:var(--font-mono);font-size:0.75rem;font-weight:500;margin-bottom:0.75rem}
+        .ct.teal{background:var(--accent-subtle);color:var(--accent)}.ct.violet{background:var(--violet-subtle);color:var(--violet)}
+        .ct.amber{background:var(--amber-subtle);color:var(--amber)}.ct.rose{background:var(--rose-subtle);color:var(--rose)}
+        .cc h4{font-size:0.95rem;font-weight:600;margin-bottom:0.5rem;color:var(--text);transition:var(--transition-theme)}
+        .cc p{font-size:0.825rem;color:var(--text-muted);line-height:1.55;transition:var(--transition-theme)}
+
+        /* TABLES */
+        .tw{background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-sm);transition:var(--transition-theme)}
+        .tw table{width:100%;border-collapse:collapse;font-size:0.85rem}
+        .tw th{background:var(--bg-elevated);padding:0.875rem 1rem;text-align:left;font-weight:600;font-size:0.75rem;letter-spacing:0.04em;text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);transition:var(--transition-theme)}
+        .tw td{padding:0.875rem 1rem;border-bottom:1px solid var(--border);transition:var(--transition-theme)}
+        .tw tr:last-child td{border-bottom:none}.tw tr:hover td{background:var(--hl-row)}
+        .tw .hr td{background:var(--hl-row)}.hl{color:var(--accent);font-weight:600}
+
+        /* FINDINGS */
+        .fgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;margin-top:2.5rem}
+        .fcard{padding:1.25rem 1.5rem;border-radius:12px;border-left:3px solid;transition:var(--transition-theme)}
+        .fcard.teal{background:var(--accent-subtle);border-color:var(--accent)}.fcard.violet{background:var(--violet-subtle);border-color:var(--violet)}
+        .fcard.rose{background:var(--rose-subtle);border-color:var(--rose)}.fcard.amber{background:var(--amber-subtle);border-color:var(--amber)}
+        .fcard h4{font-size:0.875rem;font-weight:600;margin-bottom:0.4rem;transition:var(--transition-theme)}
+        .fcard.teal h4{color:var(--accent)}.fcard.violet h4{color:var(--violet)}.fcard.rose h4{color:var(--rose)}.fcard.amber h4{color:var(--amber)}
+        .fcard p{font-size:0.825rem;color:var(--text-muted);line-height:1.55;transition:var(--transition-theme)}
+
+        /* IMAGES */
+        .igrid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;margin:1.5rem 0}
+        .ic{background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:var(--transition-theme),transform 0.3s,box-shadow 0.3s}
+        .ic:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+        .ic img{width:100%;height:auto}.ic figcaption{padding:0.875rem 1rem;font-size:0.8rem;color:var(--text-muted);line-height:1.5;transition:var(--transition-theme)}
+        .ic.cen{max-width:520px;margin:0 auto}
+
+        /* CODE */
+        .cb{background:var(--bg-code);border:1px solid var(--border);border-radius:12px;padding:1.5rem;overflow-x:auto;position:relative;transition:var(--transition-theme)}
+        .cb pre{font-family:var(--font-mono);font-size:0.8rem;line-height:1.7;color:var(--text);margin:0;transition:var(--transition-theme)}
+        .cb .cpb{position:absolute;top:0.75rem;right:0.75rem;width:32px;height:32px;border-radius:6px;border:1px solid var(--border);background:var(--bg-surface);color:var(--text-muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.75rem;opacity:0;transition:opacity 0.2s,var(--transition-theme)}
+        .cb:hover .cpb{opacity:1}.cb .cpb:hover{color:var(--accent);border-color:var(--accent)}
+
+        /* SPECS */
+        .spg{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-sm);transition:var(--transition-theme)}
+        .spc{background:var(--bg-surface);padding:1.75rem;transition:var(--transition-theme)}
+        .spc h4{font-size:0.9rem;font-weight:600;margin-bottom:0.75rem;color:var(--text);transition:var(--transition-theme)}
+        .spc p{font-size:0.825rem;color:var(--text-muted);line-height:1.65;transition:var(--transition-theme)}
+        .spc strong{color:var(--text);font-weight:500;transition:var(--transition-theme)}
+
+        /* CITATION */
+        .cit-block{background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:2rem;position:relative;transition:var(--transition-theme)}
+        .cit-block pre{font-family:var(--font-mono);font-size:0.8rem;line-height:1.7;color:var(--text);background:var(--bg-code);padding:1.25rem;border-radius:8px;overflow-x:auto;margin:0;transition:var(--transition-theme)}
+        .cit-copy{position:absolute;top:1rem;right:1rem;padding:0.4rem 0.8rem;border-radius:6px;border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-muted);font-family:var(--font-body);font-size:0.75rem;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:0.35rem;transition:var(--transition-theme)}
+        .cit-copy:hover{color:var(--accent);border-color:var(--accent)}
+        .pub-d{margin-top:1.5rem;padding:1.25rem;background:var(--accent-subtle);border-left:3px solid var(--accent);border-radius:8px;transition:var(--transition-theme)}
+        .pub-d p{font-size:0.85rem;color:var(--text-muted);margin:0.3rem 0;transition:var(--transition-theme)}
+        .pub-d strong{color:var(--text);transition:var(--transition-theme)}
+
+        /* FOOTER */
+        footer{border-top:1px solid var(--border);padding:3rem 2rem;text-align:center;transition:var(--transition-theme)}
+        .footer-inner{max-width:var(--max-width);margin:0 auto}
+        .fl{display:flex;justify-content:center;gap:2rem;margin-bottom:1.5rem;flex-wrap:wrap}
+        .fl a{color:var(--text-muted);font-size:0.85rem;font-weight:500;display:flex;align-items:center;gap:0.4rem;transition:color 0.2s}
+        .fl a:hover{color:var(--text)}
+        .fc-copy{font-size:0.8rem;color:var(--text-faint);transition:var(--transition-theme)}
+
+        /* SCROLL REVEAL */
+        .reveal{opacity:0;transform:translateY(24px);transition:opacity 0.7s ease,transform 0.7s ease}
+        .reveal.vis{opacity:1;transform:translateY(0)}
+        .rd1{transition-delay:0.1s}.rd2{transition-delay:0.2s}.rd3{transition-delay:0.3s}
+
+        /* MOBILE MENU */
+        .mm{display:none;position:fixed;top:var(--nav-height);left:0;right:0;background:var(--bg-surface);border-bottom:1px solid var(--border);padding:1rem;z-index:999;box-shadow:var(--shadow-lg);transition:var(--transition-theme)}
+        .mm.open{display:block;animation:tf 0.25s ease}
+        .mm a{display:block;padding:0.75rem 1rem;color:var(--text-muted);font-weight:500;font-size:0.95rem;border-radius:8px;transition:background 0.2s,color 0.2s}
+        .mm a:hover{background:var(--bg-elevated);color:var(--text)}
+
+        /* RESPONSIVE */
+        @media(max-width:1024px){
+            .fg,.cg{grid-template-columns:repeat(2,1fr)}.spg{grid-template-columns:repeat(2,1fr)}
+            .hero{grid-template-columns:1fr;gap:2rem;min-height:auto;padding-top:calc(var(--nav-height) + 3rem)}
+            .hero-visual{order:-1}.hero-visual svg{max-width:340px}.hero-content{max-width:100%}
         }
-
-        .bg-animation::before {
-            content: '';
-            position: absolute;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
-            animation: rotate 20s linear infinite;
+        @media(max-width:768px){
+            .nav-links{display:none}.mobile-toggle{display:flex;align-items:center;justify-content:center}
+            #mobile-theme{display:flex}
+            .fg,.sg,.cg,.fgrid{grid-template-columns:1fr}.spg{grid-template-columns:1fr}
+            .stats-grid{grid-template-columns:1fr}.igrid{grid-template-columns:1fr}
+            .hero h1{font-size:2.25rem}.hero-visual svg{max-width:280px}
+            .section{padding:3rem 1.25rem}.arch-d{padding:1.5rem 1rem}
         }
-
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Navigation */
-        nav {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            background: rgba(10, 14, 39, 0.95);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--border);
-            z-index: 1000;
-            padding: 1rem 0;
-        }
-
-        .nav-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 800;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-            list-style: none;
-        }
-
-        .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s;
-        }
-
-        .nav-links a:hover {
-            color: var(--accent-primary);
-        }
-
-        /* Hero Section */
-        .hero {
-            padding: 8rem 2rem 4rem;
-            text-align: center;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .hero h1 {
-            font-size: 4rem;
-            font-weight: 800;
-            margin-bottom: 1.5rem;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            line-height: 1.2;
-        }
-
-        .hero .subtitle {
-            font-size: 1.5rem;
-            color: var(--text-secondary);
-            margin-bottom: 2rem;
-            font-weight: 300;
-        }
-
-        .hero-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 0.875rem 2rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            border: none;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-
-        .btn-primary {
-            background: var(--accent-gradient);
-            color: white;
-            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 30px rgba(99, 102, 241, 0.6);
-        }
-
-        .btn-secondary {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            background: var(--bg-secondary);
-            border-color: var(--accent-primary);
-        }
-
-        /* Container */
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 4rem 2rem;
-        }
-
-        /* Section */
-        section {
-            margin-bottom: 6rem;
-        }
-
-        .section-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-
-        .section-subtitle {
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 1.125rem;
-            margin-bottom: 3rem;
-        }
-
-        /* Tabs */
-        .tabs {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
-            border-bottom: 2px solid var(--border);
-            overflow-x: auto;
-        }
-
-        .tab {
-            padding: 1rem 1.5rem;
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            border-bottom: 2px solid transparent;
-            margin-bottom: -2px;
-            white-space: nowrap;
-        }
-
-        .tab.active {
-            color: var(--accent-primary);
-            border-bottom-color: var(--accent-primary);
-        }
-
-        .tab:hover {
-            color: var(--text-primary);
-        }
-
-        .tab-content {
-            visibility: hidden;
-            height: 0;
-            overflow: hidden;
-            position: absolute;
-            animation: fadeIn 0.5s;
-        }
-
-        .tab-content.active {
-            visibility: visible;
-            height: auto;
-            position: relative;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Cards */
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 1rem;
-            padding: 2rem;
-            transition: all 0.3s;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            border-color: var(--accent-primary);
-            box-shadow: 0 10px 40px var(--shadow);
-        }
-
-        .card-icon {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .card h3 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .card p {
-            color: var(--text-secondary);
-        }
-
-        /* Results Table */
-        .results-table {
-            width: 100%;
-            background: var(--bg-secondary);
-            border-radius: 1rem;
-            overflow: hidden;
-            border: 1px solid var(--border);
-        }
-
-        .results-table table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .results-table th,
-        .results-table td {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .results-table th {
-            background: var(--bg-tertiary);
-            font-weight: 600;
-            color: var(--accent-primary);
-        }
-
-        .results-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .results-table tr:hover {
-            background: var(--bg-tertiary);
-        }
-
-        .highlight {
-            color: var(--success);
-            font-weight: 600;
-        }
-
-        /* Code Block */
-        .code-block {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            overflow-x: auto;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.875rem;
-            line-height: 1.6;
-        }
-
-        /* Mermaid Diagrams */
-        .mermaid {
-            background: var(--bg-secondary);
-            border-radius: 1rem;
-            padding: 2rem;
-            margin: 2rem 0;
-        }
-
-        /* Images */
-        .image-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin: 2rem 0;
-        }
-
-        .image-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 1rem;
-            overflow: hidden;
-            transition: all 0.3s;
-        }
-
-        .image-card:hover {
-            transform: scale(1.05);
-            border-color: var(--accent-primary);
-        }
-
-        .image-card img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-
-        .image-card .caption {
-            padding: 1rem;
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-        }
-
-        /* Footer */
-        footer {
-            background: var(--bg-secondary);
-            border-top: 1px solid var(--border);
-            padding: 3rem 2rem;
-            text-align: center;
-            color: var(--text-secondary);
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2.5rem;
-            }
-
-            .hero .subtitle {
-                font-size: 1.125rem;
-            }
-
-            .nav-links {
-                display: none;
-            }
-
-            .card-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+        @media(max-width:480px){.hero-actions{flex-direction:column}.hero-actions .btn{width:100%;justify-content:center}}
     </style>
 </head>
 <body>
-    <div class="bg-animation"></div>
+    <nav id="nav"><div class="nav-inner">
+        <a href="#" class="nav-logo">PMR</a>
+        <ul class="nav-links">
+            <li><a href="#overview">Overview</a></li>
+            <li><a href="#architecture">Architecture</a></li>
+            <li><a href="#results">Results</a></li>
+            <li><a href="#usage">Usage</a></li>
+            <li><a href="#citation">Citation</a></li>
+            <li><a href="https://github.com/Thomasc33/Privacy-Retargeting" target="_blank"><i class="fab fa-github"></i> GitHub</a></li>
+            <li><button class="theme-toggle" id="dt" aria-label="Toggle theme"><i class="fas fa-sun" id="ti"></i></button></li>
+        </ul>
+        <div class="nav-right">
+            <button class="theme-toggle" id="mobile-theme" aria-label="Toggle theme"><i class="fas fa-sun" id="ti2"></i></button>
+            <button class="mobile-toggle" id="mt" aria-label="Menu"><i class="fas fa-bars" id="mi"></i></button>
+        </div>
+    </div></nav>
 
-    <!-- Navigation -->
-    <nav>
-        <div class="nav-container">
-            <div class="logo">PMR</div>
-            <ul class="nav-links">
-                <li><a href="#overview">Overview</a></li>
-                <li><a href="#architecture">Architecture</a></li>
-                <li><a href="#results">Results</a></li>
-                <li><a href="#usage">Usage</a></li>
-                <li><a href="#citation">Citation</a></li>
-                <li><a href="https://github.com/Thomasc33/Privacy-Retargeting" target="_blank">
-                    <i class="fab fa-github"></i> GitHub
-                </a></li>
-            </ul>
-        </div>
-    </nav>
-
-    <!-- Hero Section -->
-    <div class="hero">
-        <h1>Privacy-centric Motion Retargeting</h1>
-        <p class="subtitle">Anonymizing skeleton-based motion data while preserving action utility through adversarial deep learning</p>
-        <div style="margin: 1rem 0; padding: 0.75rem 1.5rem; background: rgba(99, 102, 241, 0.15); border-radius: 8px; display: inline-block;">
-            <i class="fas fa-award" style="color: var(--accent-primary); margin-right: 0.5rem;"></i>
-            <strong style="color: var(--accent-primary);">ICCV 2025</strong> - International Conference on Computer Vision
-        </div>
-        <div class="hero-buttons">
-            <a href="https://openaccess.thecvf.com/content/ICCV2025/papers/Carr_Privacy-centric_Deep_Motion_Retargeting_for_Anonymization_of_Skeleton-Based_Motion_Visualization_ICCV_2025_paper.pdf" class="btn btn-primary" target="_blank">
-                <i class="fas fa-file-pdf"></i> Read Paper
-            </a>
-            <a href="https://github.com/Thomasc33/Privacy-Retargeting" class="btn btn-secondary" target="_blank">
-                <i class="fab fa-github"></i> View on GitHub
-            </a>
-            <a href="#usage" class="btn btn-secondary">
-                <i class="fas fa-book"></i> Documentation
-            </a>
-        </div>
+    <div class="mm" id="mmenu">
+        <a href="#overview" onclick="cmm()">Overview</a>
+        <a href="#architecture" onclick="cmm()">Architecture</a>
+        <a href="#results" onclick="cmm()">Results</a>
+        <a href="#usage" onclick="cmm()">Usage</a>
+        <a href="#citation" onclick="cmm()">Citation</a>
+        <a href="https://github.com/Thomasc33/Privacy-Retargeting" target="_blank"><i class="fab fa-github"></i> GitHub</a>
     </div>
 
-    <div class="container">
-        <!-- Overview Section -->
-        <section id="overview">
-            <h2 class="section-title">Overview</h2>
-            <p class="section-subtitle">Protecting privacy in skeleton-based motion capture while maintaining utility</p>
-            
-            <div class="card-grid">
-                <div class="card">
-                    <div class="card-icon"><i class="fas fa-shield-alt"></i></div>
-                    <h3>Privacy Protection</h3>
-                    <p>Reduces re-identification risk from 87.8% to 7.8% by masking personally identifiable information like body shape, gait patterns, and limb lengths.</p>
+    <main>
+        <section class="hero">
+            <div class="hero-content">
+                <div class="hero-badge reveal">ICCV 2025</div>
+                <h1 class="reveal rd1">Privacy-centric Motion Retargeting</h1>
+                <p class="hero-sub reveal rd2">Anonymizing skeleton-based motion data while preserving action utility through adversarial deep learning.</p>
+                <div class="hero-actions reveal rd3">
+                    <a href="https://openaccess.thecvf.com/content/ICCV2025/papers/Carr_Privacy-centric_Deep_Motion_Retargeting_for_Anonymization_of_Skeleton-Based_Motion_Visualization_ICCV_2025_paper.pdf" class="btn btn-primary" target="_blank"><i class="fas fa-file-pdf"></i> Read Paper</a>
+                    <a href="https://github.com/Thomasc33/Privacy-Retargeting" class="btn btn-outline" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+                    <a href="#usage" class="btn btn-outline"><i class="fas fa-book"></i> Docs</a>
                 </div>
-                <div class="card">
-                    <div class="card-icon"><i class="fas fa-running"></i></div>
-                    <h3>Action Preservation</h3>
-                    <p>Maintains 35.7% action recognition accuracy, significantly outperforming baseline anonymization methods (2-3%).</p>
-                </div>
-                <div class="card">
-                    <div class="card-icon"><i class="fas fa-exchange-alt"></i></div>
-                    <h3>Motion Retargeting</h3>
-                    <p>Transfers motion from original skeleton to dummy skeleton, effectively replacing identity while preserving movement semantics.</p>
-                </div>
-                <div class="card">
-                    <div class="card-icon"><i class="fas fa-brain"></i></div>
-                    <h3>Adversarial Learning</h3>
-                    <p>Uses cooperative and adversarial training to disentangle identity from motion without prior knowledge of attack models.</p>
-                </div>
-                <div class="card">
-                    <div class="card-icon"><i class="fas fa-bolt"></i></div>
-                    <h3>Fast Inference</h3>
-                    <p>Processes 75 frames (~2.5s of motion) in just 0.006 seconds, enabling real-time anonymization applications.</p>
-                </div>
-                <div class="card">
-                    <div class="card-icon"><i class="fas fa-database"></i></div>
-                    <h3>Robust Evaluation</h3>
-                    <p>Tested on NTU RGB+D 60 and 120 datasets with comprehensive privacy and utility metrics.</p>
-                </div>
+            </div>
+            <div class="hero-visual reveal">
+                <svg viewBox="0 0 440 260" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Skeleton retargeting visualization">
+                    <g class="so"><g class="skel-bone">
+                        <line x1="90" y1="38" x2="90" y2="55" stroke-width="1.5"/><line x1="90" y1="55" x2="90" y2="95" stroke-width="1.5"/>
+                        <line x1="90" y1="95" x2="90" y2="130" stroke-width="1.5"/><line x1="60" y1="60" x2="120" y2="60" stroke-width="1.5"/>
+                        <line x1="60" y1="60" x2="45" y2="90" stroke-width="1.5"/><line x1="45" y1="90" x2="35" y2="120" stroke-width="1.5"/>
+                        <line x1="70" y1="130" x2="110" y2="130" stroke-width="1.5"/>
+                        <line x1="70" y1="130" x2="65" y2="170" stroke-width="1.5"/><line x1="65" y1="170" x2="60" y2="210" stroke-width="1.5"/>
+                        <line x1="110" y1="130" x2="115" y2="170" stroke-width="1.5"/><line x1="115" y1="170" x2="118" y2="210" stroke-width="1.5"/>
+                    </g>
+                    <g class="skel-bone skel-arm" style="transform-origin:120px 60px">
+                        <line x1="120" y1="60" x2="140" y2="88" stroke-width="1.5" stroke="var(--skel-orig)"/>
+                        <line x1="140" y1="88" x2="150" y2="118" stroke-width="1.5" stroke="var(--skel-orig)"/>
+                        <circle cx="140" cy="88" r="3.5" class="skel-joint" fill="var(--skel-orig)"/>
+                        <circle cx="150" cy="118" r="3" class="skel-joint" fill="var(--skel-orig)"/>
+                    </g>
+                    <circle cx="90" cy="28" r="10" class="skel-joint" opacity="0.15"/><circle cx="90" cy="28" r="5" class="skel-joint"/>
+                    <circle cx="90" cy="55" r="3" class="skel-joint"/><circle cx="60" cy="60" r="3.5" class="skel-joint"/>
+                    <circle cx="120" cy="60" r="3.5" class="skel-joint"/><circle cx="45" cy="90" r="3.5" class="skel-joint"/>
+                    <circle cx="35" cy="120" r="3" class="skel-joint"/><circle cx="90" cy="95" r="3" class="skel-joint"/>
+                    <circle cx="90" cy="130" r="3.5" class="skel-joint"/><circle cx="70" cy="130" r="3" class="skel-joint"/>
+                    <circle cx="110" cy="130" r="3" class="skel-joint"/><circle cx="65" cy="170" r="3.5" class="skel-joint"/>
+                    <circle cx="115" cy="170" r="3.5" class="skel-joint"/><circle cx="60" cy="210" r="3" class="skel-joint"/>
+                    <circle cx="118" cy="210" r="3" class="skel-joint"/>
+                    </g>
+                    <text x="90" y="240" class="skel-label" text-anchor="middle" fill="var(--skel-orig)">ORIGINAL</text>
+
+                    <g><line x1="180" y1="120" x2="250" y2="120" stroke="var(--text-faint)" stroke-width="1.5" stroke-dasharray="4 3"/>
+                    <polygon points="255,120 247,115 247,125" fill="var(--text-faint)"/>
+                    <text x="215" y="110" font-size="9" fill="var(--text-faint)" text-anchor="middle" font-family="var(--font-body)" font-weight="500">PMR</text></g>
+
+                    <g class="sa"><g class="skel-bone">
+                        <line x1="340" y1="52" x2="340" y2="66" stroke-width="1.5"/><line x1="340" y1="66" x2="340" y2="100" stroke-width="1.5"/>
+                        <line x1="340" y1="100" x2="340" y2="128" stroke-width="1.5"/><line x1="316" y1="70" x2="364" y2="70" stroke-width="1.5"/>
+                        <line x1="316" y1="70" x2="304" y2="95" stroke-width="1.5"/><line x1="304" y1="95" x2="296" y2="118" stroke-width="1.5"/>
+                        <line x1="324" y1="128" x2="356" y2="128" stroke-width="1.5"/>
+                        <line x1="324" y1="128" x2="320" y2="162" stroke-width="1.5"/><line x1="320" y1="162" x2="316" y2="196" stroke-width="1.5"/>
+                        <line x1="356" y1="128" x2="360" y2="162" stroke-width="1.5"/><line x1="360" y1="162" x2="362" y2="196" stroke-width="1.5"/>
+                    </g>
+                    <g class="skel-bone skel-arm" style="transform-origin:364px 70px">
+                        <line x1="364" y1="70" x2="380" y2="95" stroke-width="1.5" stroke="var(--skel-anon)"/>
+                        <line x1="380" y1="95" x2="388" y2="118" stroke-width="1.5" stroke="var(--skel-anon)"/>
+                        <circle cx="380" cy="95" r="3.5" class="skel-joint" fill="var(--skel-anon)"/>
+                        <circle cx="388" cy="118" r="3" class="skel-joint" fill="var(--skel-anon)"/>
+                    </g>
+                    <circle cx="340" cy="42" r="9" class="skel-joint" opacity="0.15"/><circle cx="340" cy="42" r="4.5" class="skel-joint"/>
+                    <circle cx="340" cy="66" r="3" class="skel-joint"/><circle cx="316" cy="70" r="3.5" class="skel-joint"/>
+                    <circle cx="364" cy="70" r="3.5" class="skel-joint"/><circle cx="304" cy="95" r="3.5" class="skel-joint"/>
+                    <circle cx="296" cy="118" r="3" class="skel-joint"/><circle cx="340" cy="100" r="3" class="skel-joint"/>
+                    <circle cx="340" cy="128" r="3.5" class="skel-joint"/><circle cx="324" cy="128" r="3" class="skel-joint"/>
+                    <circle cx="356" cy="128" r="3" class="skel-joint"/><circle cx="320" cy="162" r="3.5" class="skel-joint"/>
+                    <circle cx="360" cy="162" r="3.5" class="skel-joint"/><circle cx="316" cy="196" r="3" class="skel-joint"/>
+                    <circle cx="362" cy="196" r="3" class="skel-joint"/>
+                    </g>
+                    <text x="340" y="226" class="skel-label" text-anchor="middle" fill="var(--skel-anon)">ANONYMIZED</text>
+                </svg>
             </div>
         </section>
 
-        <!-- Architecture Section -->
-        <section id="architecture">
-            <h2 class="section-title">Architecture</h2>
-            <p class="section-subtitle">Two-encoder/one-decoder paradigm with adversarial and cooperative learning</p>
-
-            <div class="tabs">
-                <button class="tab active" onclick="switchTab(event, 'overview-tab')">Overview</button>
-                <button class="tab" onclick="switchTab(event, 'dataflow-tab')">Data Flow</button>
-                <button class="tab" onclick="switchTab(event, 'training-tab')">Training Stages</button>
-                <button class="tab" onclick="switchTab(event, 'components-tab')">Components</button>
-            </div>
-
-            <div id="overview-tab" class="tab-content active">
-                <div class="mermaid">
-flowchart TB
-subgraph Input
-S[Original Skeleton]
-D[Dummy Skeleton]
-end
-subgraph Encoders
-EM[Motion Encoder]
-EP[Privacy Encoder]
-end
-subgraph Decoder
-DEC[Decoder]
-end
-subgraph Classifiers
-M[Motion Classifier]
-P[Privacy Classifier]
-Q[Quality Controller]
-end
-S --> EM
-S --> EP
-D --> EP
-EM --> DEC
-EP --> DEC
-EM -.-> M
-EP -.-> M
-EP -.-> P
-EM -.-> P
-DEC --> Q
-DEC --> OUT[Anonymized Skeleton]
-style EM fill:#6366f1
-style EP fill:#8b5cf6
-style DEC fill:#10b981
-style M fill:#f59e0b
-style P fill:#f59e0b
-style Q fill:#ef4444
-style OUT fill:#10b981
+        <div class="stats-bar reveal">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-change"><i class="fas fa-arrow-down" style="font-size:0.6rem"></i> 91% reduction</div>
+                    <div class="stat-number">7.8%</div>
+                    <div class="stat-label">Re-identification Risk</div>
                 </div>
-                <p style="text-align: center; color: var(--text-secondary); margin-top: 1rem;">
-                    PMR architecture showing the flow from input skeletons through encoders, decoder, and classifiers to produce anonymized output.
-                </p>
-            </div>
-
-            <div id="dataflow-tab" class="tab-content">
-                <h3 style="margin-bottom: 1rem;">Cross-Reconstruction Data Flow</h3>
-                <div class="mermaid">
-flowchart LR
-    A[Original Skeleton]
-    B[Motion Embedding]
-    C[Dummy Skeleton]
-    D[Privacy Embedding]
-    E[Decoder]
-    F[Anonymized Skeleton]
-
-    A --> B
-    C --> D
-    B --> E
-    D --> E
-    E --> F
-
-    style A fill:#6366f1
-    style B fill:#6366f1
-    style C fill:#8b5cf6
-    style D fill:#8b5cf6
-    style E fill:#10b981
-    style F fill:#10b981
-
+                <div class="stat-item">
+                    <div class="stat-change"><i class="fas fa-check" style="font-size:0.6rem"></i> 13.7x better than baselines</div>
+                    <div class="stat-number">35.7%</div>
+                    <div class="stat-label">Action Recognition Preserved</div>
                 </div>
-                <p style="text-align: center; color: var(--text-secondary); margin-top: 1rem; margin-bottom: 2rem;">
-                    Motion from original skeleton (via E<sub>M</sub>), privacy/structure from dummy skeleton (via E<sub>P</sub>).
-                </p>
-
-                <h3 style="margin-bottom: 1rem;">Cooperative and Adversarial Training</h3>
-                <div class="mermaid">
-flowchart LR
-    S[Skeleton] --> EM[Motion Encoder]
-    S --> EP[Privacy Encoder]
-
-    EM -->|Cooperative| M[Motion Classifier]
-    EM -.->|Adversarial| P[Privacy Classifier]
-
-    EP -->|Cooperative| P
-    EP -.->|Adversarial| M
-
-    EM --> D[Decoder]
-    EP --> D
-    D --> Q[Quality Controller]
-    D --> OUT[Output]
-
-    style S fill:#6366f1
-    style EM fill:#6366f1
-    style EP fill:#8b5cf6
-    style M fill:#f59e0b
-    style P fill:#f59e0b
-    style D fill:#10b981
-    style Q fill:#ef4444
-    style OUT fill:#10b981
-                </div>
-                <p style="text-align: center; color: var(--text-secondary); margin-top: 1rem;">
-                    <strong>Cooperative (solid):</strong> E<sub>M</sub> ↔ M (motion), E<sub>P</sub> ↔ P (privacy)<br>
-                    <strong>Adversarial (dashed):</strong> E<sub>M</sub> ⟷ P, E<sub>P</sub> ⟷ M<br>
-                    This disentangles motion from identity information.
-                </p>
-            </div>
-
-            <div id="training-tab" class="tab-content">
-                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; margin-bottom: 2rem;">
-                    <div class="card">
-                        <h4 style="margin-bottom: 1rem; text-align: center;">Stage 1: Autoencoder Warm-up</h4>
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
-                            <div style="background: #6366f1; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">E<sub>M</sub><br>TRAIN</div>
-                            <div style="background: #8b5cf6; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">E<sub>P</sub><br>TRAIN</div>
-                            <div style="background: #10b981; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">D<br>TRAIN</div>
-                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">M<br>FROZEN</div>
-                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">P<br>FROZEN</div>
-                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">Q<br>FROZEN</div>
-                        </div>
-                        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
-                            <strong>25 epochs (5 paired + 20 unpaired)</strong><br>
-                            Trains encoders and decoder to reconstruct skeletons using reconstruction and smoothness losses.
-                        </p>
-                    </div>
-
-                    <div class="card">
-                        <h4 style="margin-bottom: 1rem; text-align: center;">Stage 2: Classifier Pre-training</h4>
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
-                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">E<sub>M</sub><br>FROZEN</div>
-                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">E<sub>P</sub><br>FROZEN</div>
-                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">D<br>FROZEN</div>
-                            <div style="background: #f59e0b; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">M<br>TRAIN</div>
-                            <div style="background: #f59e0b; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">P<br>TRAIN</div>
-                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">Q<br>FROZEN</div>
-                        </div>
-                        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
-                            <strong>70 epochs (20 paired + 50 unpaired)</strong><br>
-                            Pre-trains motion and privacy classifiers on frozen encoder embeddings.
-                        </p>
-                    </div>
-
-                    <div class="card">
-                        <h4 style="margin-bottom: 1rem; text-align: center;">Stage 3: Adversarial Training</h4>
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
-                            <div style="background: #6366f1; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">E<sub>M</sub><br>TRAIN</div>
-                            <div style="background: #8b5cf6; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">E<sub>P</sub><br>TRAIN</div>
-                            <div style="background: #10b981; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">D<br>TRAIN</div>
-                            <div style="background: #f59e0b; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">M<br>TRAIN</div>
-                            <div style="background: #f59e0b; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">P<br>TRAIN</div>
-                            <div style="background: #ef4444; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">Q<br>TRAIN</div>
-                        </div>
-                        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
-                            <strong>100 epochs (unpaired)</strong><br>
-                            Cooperative and adversarial training. M cooperates with E<sub>M</sub> but adversarially trains against E<sub>P</sub>, and vice versa for P.
-                        </p>
-                    </div>
-
-                    <div class="card">
-                        <h4 style="margin-bottom: 1rem; text-align: center;">Stage 4: Motion Retargeting</h4>
-                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem;">
-                            <div style="background: #6366f1; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">E<sub>M</sub><br>TRAIN</div>
-                            <div style="background: #8b5cf6; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">E<sub>P</sub><br>TRAIN</div>
-                            <div style="background: #10b981; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">D<br>TRAIN</div>
-                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">M<br>FROZEN</div>
-                            <div style="background: #3f3f46; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">P<br>FROZEN</div>
-                            <div style="background: #ef4444; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: bold;">Q<br>TRAIN</div>
-                        </div>
-                        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
-                            <strong>100 epochs (paired)</strong><br>
-                            Cross-reconstruction with triplet loss, latent consistency, and end-effector losses. Fine-tunes for anonymization quality.
-                        </p>
-                    </div>
+                <div class="stat-item">
+                    <div class="stat-change"><i class="fas fa-bolt" style="font-size:0.6rem"></i> Real-time capable</div>
+                    <div class="stat-number">0.006s</div>
+                    <div class="stat-label">Inference per Sequence</div>
                 </div>
             </div>
+        </div>
 
-            <div id="components-tab" class="tab-content">
-                <div class="card-grid">
-                    <div class="card">
-                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                            <h3 style="margin: 0;">Motion Encoder</h3>
-                            <span style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 0.25rem 0.75rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; font-weight: 600;">E<sub>M</sub></span>
-                        </div>
-                        <p><strong>Purpose:</strong> Extract action-specific temporal information</p>
-                        <p><strong>Architecture:</strong> 4-layer CNN with reflection padding and max pooling</p>
-                        <p><strong>Output:</strong> Motion embedding (256 × 32)</p>
+        <div class="divider"></div>
+
+        <!-- Overview -->
+        <section id="overview" class="section">
+            <p class="section-label reveal">Overview</p>
+            <h2 class="section-title reveal rd1">Protecting privacy in motion data</h2>
+            <p class="section-desc reveal rd2">PMR transfers motion from an original skeleton to a &ldquo;dummy&rdquo; skeleton, masking personally identifiable information while keeping actions recognizable.</p>
+            <div class="fg reveal rd3">
+                <div class="fc"><div class="fdot teal"></div><h3>Privacy Protection</h3><p>Reduces re-identification risk from 87.8% to 7.8% by masking PII like body shape, gait patterns, and limb lengths.</p></div>
+                <div class="fc"><div class="fdot teal"></div><h3>Action Preservation</h3><p>Maintains 35.7% action recognition accuracy, significantly outperforming baseline anonymization methods (2&ndash;3%).</p></div>
+                <div class="fc"><div class="fdot violet"></div><h3>Motion Retargeting</h3><p>Transfers motion from original to dummy skeleton, replacing identity while preserving movement semantics.</p></div>
+                <div class="fc"><div class="fdot amber"></div><h3>Adversarial Learning</h3><p>Cooperative and adversarial training disentangles identity from motion without prior knowledge of attack models.</p></div>
+                <div class="fc"><div class="fdot teal"></div><h3>Fast Inference</h3><p>Processes 75 frames (~2.5s of motion) in 0.006 seconds, enabling real-time anonymization applications.</p></div>
+                <div class="fc"><div class="fdot rose"></div><h3>Robust Evaluation</h3><p>Tested on NTU RGB+D 60 and 120 datasets with comprehensive privacy and utility metrics.</p></div>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <!-- Architecture -->
+        <section id="architecture" class="section">
+            <p class="section-label reveal">Architecture</p>
+            <h2 class="section-title reveal rd1">Two-encoder, one-decoder</h2>
+            <p class="section-desc reveal rd2">A cooperative-adversarial paradigm that disentangles motion from identity through dual encoders and specialized classifiers.</p>
+            <div class="reveal rd3">
+                <div class="tabs-nav"><button class="tab-btn active" onclick="stab(event,'ao')">Overview</button><button class="tab-btn" onclick="stab(event,'at')">Training Stages</button><button class="tab-btn" onclick="stab(event,'ac')">Components</button></div>
+
+                <div id="ao" class="tp active">
+                    <div class="arch-d"><div class="arch-flow">
+                        <div class="acol"><div class="ab inp">Original<small>Skeleton</small></div><div class="ab inp">Dummy<small>Skeleton</small></div></div>
+                        <div class="aarr">&rarr;</div>
+                        <div class="acol"><div class="ab em">E<sub>M</sub><small>Motion</small></div><div class="ab ep">E<sub>P</sub><small>Privacy</small></div></div>
+                        <div class="aarr">&rarr;</div>
+                        <div class="acol"><div class="ab dec">Decoder<small>D</small></div></div>
+                        <div class="aarr">&rarr;</div>
+                        <div class="acol"><div class="ab out">Output<small>Anonymized</small></div></div>
                     </div>
-                    <div class="card">
-                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                            <h3 style="margin: 0;">Privacy Encoder</h3>
-                            <span style="background: linear-gradient(135deg, #8b5cf6, #a855f7); color: white; padding: 0.25rem 0.75rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; font-weight: 600;">E<sub>P</sub></span>
-                        </div>
-                        <p><strong>Purpose:</strong> Extract skeleton structure and style (PII)</p>
-                        <p><strong>Architecture:</strong> Identical to E<sub>M</sub> but serves different purpose</p>
-                        <p><strong>Output:</strong> Privacy embedding (256 × 32)</p>
+                    <div style="display:flex;justify-content:center;gap:1rem;margin-top:1.5rem">
+                        <div class="ab clf" style="min-width:80px">M<small>Action</small></div>
+                        <div class="ab clf" style="min-width:80px">P<small>Identity</small></div>
+                        <div class="ab qc" style="min-width:80px">Q<small>Quality</small></div>
                     </div>
-                    <div class="card">
-                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                            <h3 style="margin: 0;">Decoder</h3>
-                            <span style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 0.25rem 0.75rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; font-weight: 600;">D</span>
-                        </div>
-                        <p><strong>Purpose:</strong> Reconstruct skeleton from embeddings</p>
-                        <p><strong>Architecture:</strong> 4-layer transpose CNN with upsampling</p>
-                        <p><strong>Input:</strong> Concatenated embeddings (512 × 32)</p>
+                    <p class="arch-cap"><strong>Cooperative:</strong> E<sub>M</sub> &harr; M, E<sub>P</sub> &harr; P &nbsp;&bull;&nbsp; <strong>Adversarial:</strong> E<sub>M</sub> &lrarr; P, E<sub>P</sub> &lrarr; M &nbsp;&bull;&nbsp; Motion from original &times; structure from dummy &rarr; anonymized output</p>
                     </div>
-                    <div class="card">
-                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                            <h3 style="margin: 0;">Motion Classifier</h3>
-                            <span style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 0.25rem 0.75rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; font-weight: 600;">M</span>
-                        </div>
-                        <p><strong>Purpose:</strong> Predict action from embeddings</p>
-                        <p><strong>Training:</strong> Cooperative with E<sub>M</sub>, adversarial with E<sub>P</sub></p>
-                        <p><strong>Output:</strong> Action probabilities (60 or 120 classes)</p>
+                </div>
+
+                <div id="at" class="tp">
+                    <div class="sg">
+                        <div class="sc"><div class="sn">1</div><h4>Autoencoder Warm-up</h4><div class="sm"><div class="smod ta">E<sub>M</sub></div><div class="smod tv">E<sub>P</sub></div><div class="smod ta">D</div><div class="smod fz">M</div><div class="smod fz">P</div><div class="smod fz">Q</div></div><p class="si"><strong>25 epochs</strong> (5 paired + 20 unpaired). Trains encoders and decoder to reconstruct skeletons.</p></div>
+                        <div class="sc"><div class="sn">2</div><h4>Classifier Pre-training</h4><div class="sm"><div class="smod fz">E<sub>M</sub></div><div class="smod fz">E<sub>P</sub></div><div class="smod fz">D</div><div class="smod tw">M</div><div class="smod tw">P</div><div class="smod fz">Q</div></div><p class="si"><strong>70 epochs</strong> (20 paired + 50 unpaired). Pre-trains classifiers on frozen encoder embeddings.</p></div>
+                        <div class="sc"><div class="sn">3</div><h4>Adversarial Training</h4><div class="sm"><div class="smod ta">E<sub>M</sub></div><div class="smod tv">E<sub>P</sub></div><div class="smod ta">D</div><div class="smod tw">M</div><div class="smod tw">P</div><div class="smod tr">Q</div></div><p class="si"><strong>100 epochs</strong> (unpaired). Cooperative and adversarial training to disentangle motion from identity.</p></div>
+                        <div class="sc"><div class="sn">4</div><h4>Motion Retargeting</h4><div class="sm"><div class="smod ta">E<sub>M</sub></div><div class="smod tv">E<sub>P</sub></div><div class="smod ta">D</div><div class="smod fz">M</div><div class="smod fz">P</div><div class="smod tr">Q</div></div><p class="si"><strong>100 epochs</strong> (paired). Cross-reconstruction with triplet, latent consistency, and end-effector losses.</p></div>
                     </div>
-                    <div class="card">
-                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                            <h3 style="margin: 0;">Privacy Classifier</h3>
-                            <span style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 0.25rem 0.75rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; font-weight: 600;">P</span>
-                        </div>
-                        <p><strong>Purpose:</strong> Predict actor ID from embeddings</p>
-                        <p><strong>Training:</strong> Cooperative with E<sub>P</sub>, adversarial with E<sub>M</sub></p>
-                        <p><strong>Output:</strong> Actor probabilities (40 or 106 classes)</p>
-                    </div>
-                    <div class="card">
-                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
-                            <h3 style="margin: 0;">Quality Controller</h3>
-                            <span style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; padding: 0.25rem 0.75rem; border-radius: 6px; font-family: 'JetBrains Mono', monospace; font-size: 0.875rem; font-weight: 600;">Q</span>
-                        </div>
-                        <p><strong>Purpose:</strong> Distinguish real vs generated skeletons</p>
-                        <p><strong>Architecture:</strong> GAN-style discriminator</p>
-                        <p><strong>Output:</strong> Real/fake probability</p>
+                </div>
+
+                <div id="ac" class="tp">
+                    <div class="cg">
+                        <div class="cc"><div class="ct teal">E<sub>M</sub></div><h4>Motion Encoder</h4><p>4-layer CNN with reflection padding. Extracts action-specific temporal information into a 256&times;32 embedding.</p></div>
+                        <div class="cc"><div class="ct violet">E<sub>P</sub></div><h4>Privacy Encoder</h4><p>Identical architecture. Captures skeleton structure and style (PII) into a 256&times;32 privacy embedding.</p></div>
+                        <div class="cc"><div class="ct teal">D</div><h4>Decoder</h4><p>4-layer transpose CNN with upsampling. Reconstructs skeletons from concatenated embeddings (512&times;32).</p></div>
+                        <div class="cc"><div class="ct amber">M</div><h4>Motion Classifier</h4><p>Predicts action from embeddings. Cooperative with E<sub>M</sub>, adversarial with E<sub>P</sub>. 60 or 120 classes.</p></div>
+                        <div class="cc"><div class="ct amber">P</div><h4>Privacy Classifier</h4><p>Predicts actor identity. Cooperative with E<sub>P</sub>, adversarial with E<sub>M</sub>. 40 or 106 classes.</p></div>
+                        <div class="cc"><div class="ct rose">Q</div><h4>Quality Controller</h4><p>GAN-style discriminator. Distinguishes real vs. generated skeletons to ensure visual plausibility.</p></div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Results Section -->
-        <section id="results">
-            <h2 class="section-title">Results</h2>
-            <p class="section-subtitle">Comprehensive evaluation on NTU RGB+D datasets</p>
+        <div class="divider"></div>
 
-            <div class="tabs">
-                <button class="tab active" onclick="switchTab(event, 'main-results-tab')">Main Results</button>
-                <button class="tab" onclick="switchTab(event, 'visualizations-tab')">Visualizations</button>
-                <button class="tab" onclick="switchTab(event, 'ablation-tab')">Ablation Study</button>
-            </div>
+        <!-- Results -->
+        <section id="results" class="section">
+            <p class="section-label reveal">Results</p>
+            <h2 class="section-title reveal rd1">Comprehensive evaluation</h2>
+            <p class="section-desc reveal rd2">Tested on NTU RGB+D datasets with privacy, utility, and reconstruction metrics.</p>
+            <div class="reveal rd3">
+                <div class="tabs-nav"><button class="tab-btn active" onclick="stab(event,'rm')">Main Results</button><button class="tab-btn" onclick="stab(event,'rv')">Visualizations</button><button class="tab-btn" onclick="stab(event,'ra')">Ablation Study</button></div>
 
-            <div id="main-results-tab" class="tab-content active">
-                <h3 style="margin-bottom: 1.5rem;">Performance Comparison on NTU RGB+D 60</h3>
-                <div class="results-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Method</th>
-                                <th>MSE ↓</th>
-                                <th>AR Top-1 ↑</th>
-                                <th>AR Top-5 ↑</th>
-                                <th>Re-ID Top-1 ↓</th>
-                                <th>Re-ID Top-5 ↓</th>
-                                <th>Gender ↓</th>
-                                <th>Linkage ↓</th>
-                            </tr>
-                        </thead>
+                <div id="rm" class="tp active">
+                    <h3 style="font-size:1rem;font-weight:600;margin-bottom:1.25rem">Performance Comparison &mdash; NTU RGB+D 60</h3>
+                    <div class="tw" style="overflow-x:auto"><table>
+                        <thead><tr><th>Method</th><th>MSE &darr;</th><th>AR Top-1 &uarr;</th><th>AR Top-5 &uarr;</th><th>Re-ID Top-1 &darr;</th><th>Re-ID Top-5 &darr;</th><th>Gender &darr;</th><th>Linkage &darr;</th></tr></thead>
                         <tbody>
-                            <tr>
-                                <td><strong>Original</strong></td>
-                                <td>-</td>
-                                <td>82.2%</td>
-                                <td>85.0%</td>
-                                <td>87.8%</td>
-                                <td>97.3%</td>
-                                <td>88.7%</td>
-                                <td>69.6%</td>
-                            </tr>
-                            <tr>
-                                <td><strong>UNet (Moon et al.)</strong></td>
-                                <td>0.0834</td>
-                                <td>2.6%</td>
-                                <td>11.1%</td>
-                                <td>3.0%</td>
-                                <td>26.8%</td>
-                                <td>3.0%</td>
-                                <td>50.0%</td>
-                            </tr>
-                            <tr>
-                                <td><strong>ResNet (Moon et al.)</strong></td>
-                                <td>0.2988</td>
-                                <td>1.8%</td>
-                                <td>11.2%</td>
-                                <td>9.1%</td>
-                                <td>34.1%</td>
-                                <td>9.0%</td>
-                                <td>50.8%</td>
-                            </tr>
-                            <tr>
-                                <td><strong>DMR (Baseline)</strong></td>
-                                <td>0.0071</td>
-                                <td>49.1%</td>
-                                <td>73.1%</td>
-                                <td>25.7%</td>
-                                <td>60.3%</td>
-                                <td>25.7%</td>
-                                <td>50.0%</td>
-                            </tr>
-                            <tr style="background: rgba(99, 102, 241, 0.1);">
-                                <td><strong>PMR (Ours)</strong></td>
-                                <td class="highlight">0.0138</td>
-                                <td class="highlight">35.7%</td>
-                                <td class="highlight">63.0%</td>
-                                <td class="highlight">7.8%</td>
-                                <td class="highlight">26.4%</td>
-                                <td class="highlight">7.8%</td>
-                                <td class="highlight">50.0%</td>
-                            </tr>
+                            <tr><td><strong>Original</strong></td><td>&mdash;</td><td>82.2%</td><td>85.0%</td><td>87.8%</td><td>97.3%</td><td>88.7%</td><td>69.6%</td></tr>
+                            <tr><td><strong>UNet</strong> <span style="color:var(--text-faint);font-size:0.75rem">(Moon et al.)</span></td><td>0.0834</td><td>2.6%</td><td>11.1%</td><td>3.0%</td><td>26.8%</td><td>3.0%</td><td>50.0%</td></tr>
+                            <tr><td><strong>ResNet</strong> <span style="color:var(--text-faint);font-size:0.75rem">(Moon et al.)</span></td><td>0.2988</td><td>1.8%</td><td>11.2%</td><td>9.1%</td><td>34.1%</td><td>9.0%</td><td>50.8%</td></tr>
+                            <tr><td><strong>DMR</strong> <span style="color:var(--text-faint);font-size:0.75rem">(Baseline)</span></td><td>0.0071</td><td>49.1%</td><td>73.1%</td><td>25.7%</td><td>60.3%</td><td>25.7%</td><td>50.0%</td></tr>
+                            <tr class="hr"><td><strong>PMR (Ours)</strong></td><td class="hl">0.0138</td><td class="hl">35.7%</td><td class="hl">63.0%</td><td class="hl">7.8%</td><td class="hl">26.4%</td><td class="hl">7.8%</td><td class="hl">50.0%</td></tr>
                         </tbody>
-                    </table>
-                </div>
-
-                <div style="margin-top: 3rem;">
-                    <h3 style="margin-bottom: 1.5rem;">Key Findings</h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
-                        <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 4px solid #6366f1; padding: 1.5rem; border-radius: 8px;">
-                            <h4 style="margin: 0 0 0.75rem 0; color: #6366f1;">Optimal Privacy-Utility Trade-off</h4>
-                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.95rem;">PMR achieves the best balance between privacy protection (7.8% Top-1 re-ID) and utility preservation (35.7% Top-1 action recognition).</p>
-                        </div>
-                        <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(139, 92, 246, 0.05)); border-left: 4px solid #8b5cf6; padding: 1.5rem; border-radius: 8px;">
-                            <h4 style="margin: 0 0 0.75rem 0; color: #8b5cf6;">Superior to Baselines</h4>
-                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.95rem;">Outperforms UNet by 13.7× in action recognition (35.7% vs 2.6%) while maintaining strong privacy protection.</p>
-                        </div>
-                        <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05)); border-left: 4px solid #10b981; padding: 1.5rem; border-radius: 8px;">
-                            <h4 style="margin: 0 0 0.75rem 0; color: #10b981;">Strong Privacy Guarantees</h4>
-                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.95rem;">Reduces re-identification from 87.8% to 7.8% (Top-1) and linkage attacks to random chance (50.0%).</p>
-                        </div>
-                        <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05)); border-left: 4px solid #ef4444; padding: 1.5rem; border-radius: 8px;">
-                            <h4 style="margin: 0 0 0.75rem 0; color: #ef4444;">Low Reconstruction Error</h4>
-                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.95rem;">MSE of 0.0138 ensures visually plausible skeletons while anonymizing identity, balancing between DMR (0.0071) and Moon's methods (0.0834+).</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="visualizations-tab" class="tab-content">
-                <h3 style="margin-bottom: 1.5rem;">Embedding Space Visualizations</h3>
-                <div class="image-grid">
-                    <div class="image-card">
-                        <img src="fig/action clustering.png" alt="Motion Embedding Clustering" onerror="this.parentElement.style.display='none'">
-                        <div class="caption">Motion embeddings clustered by action class, showing clear separation of different actions.</div>
-                    </div>
-                    <div class="image-card">
-                        <img src="fig/actor clustering.png" alt="Privacy Embedding Clustering" onerror="this.parentElement.style.display='none'">
-                        <div class="caption">Privacy embeddings showing actor identity information is captured but not leaked to motion encoder.</div>
+                    </table></div>
+                    <div class="fgrid">
+                        <div class="fcard teal"><h4>Optimal Privacy-Utility Trade-off</h4><p>Best balance between privacy protection (7.8% re-ID) and utility preservation (35.7% action recognition).</p></div>
+                        <div class="fcard violet"><h4>Superior to Baselines</h4><p>Outperforms UNet by 13.7&times; in action recognition while maintaining strong privacy protection.</p></div>
+                        <div class="fcard rose"><h4>Strong Privacy Guarantees</h4><p>Reduces re-identification from 87.8% to 7.8% and linkage attacks to random chance (50.0%).</p></div>
+                        <div class="fcard amber"><h4>Low Reconstruction Error</h4><p>MSE of 0.0138 ensures visually plausible skeletons while anonymizing identity.</p></div>
                     </div>
                 </div>
 
-                <h3 style="margin-bottom: 1.5rem; margin-top: 3rem;">Classifier Performance</h3>
-                <div class="image-grid">
-                    <div class="image-card">
-                        <img src="fig/embedding utility acc.png" alt="Utility Classifier Accuracy" onerror="this.parentElement.style.display='none'">
-                        <div class="caption">Motion classifier accuracy on motion vs privacy embeddings, demonstrating successful disentanglement.</div>
+                <div id="rv" class="tp">
+                    <h3 style="font-size:1rem;font-weight:600;margin-bottom:1.25rem">Embedding Space Visualizations</h3>
+                    <div class="igrid">
+                        <figure class="ic"><img src="fig/action clustering.png" alt="Motion Embedding Clustering" loading="lazy" onerror="this.closest('.ic').style.display='none'"><figcaption>Motion embeddings clustered by action class, showing clear separation.</figcaption></figure>
+                        <figure class="ic"><img src="fig/actor clustering.png" alt="Privacy Embedding Clustering" loading="lazy" onerror="this.closest('.ic').style.display='none'"><figcaption>Privacy embeddings capturing actor identity, isolated from motion encoder.</figcaption></figure>
                     </div>
-                    <div class="image-card">
-                        <img src="fig/embedding priv acc.png" alt="Privacy Classifier Accuracy" onerror="this.parentElement.style.display='none'">
-                        <div class="caption">Privacy classifier accuracy showing identity information is removed from motion embeddings.</div>
+                    <h3 style="font-size:1rem;font-weight:600;margin:2.5rem 0 1.25rem">Classifier Performance</h3>
+                    <div class="igrid">
+                        <figure class="ic"><img src="fig/embedding utility acc.png" alt="Utility Classifier" loading="lazy" onerror="this.closest('.ic').style.display='none'"><figcaption>Motion classifier accuracy demonstrating successful disentanglement.</figcaption></figure>
+                        <figure class="ic"><img src="fig/embedding priv acc.png" alt="Privacy Classifier" loading="lazy" onerror="this.closest('.ic').style.display='none'"><figcaption>Privacy classifier confirming identity removal from motion embeddings.</figcaption></figure>
                     </div>
+                    <h3 style="font-size:1rem;font-weight:600;margin:2.5rem 0 1.25rem">Privacy-Utility Trade-off</h3>
+                    <figure class="ic cen"><img src="fig/res scatter.png" alt="Results Scatter Plot" loading="lazy" onerror="this.closest('.ic').style.display='none'"><figcaption>PMR achieves optimal balance between privacy and utility.</figcaption></figure>
                 </div>
 
-                <h3 style="margin-bottom: 1.5rem; margin-top: 3rem;">Privacy-Utility Trade-off</h3>
-                <div class="image-card" style="max-width: 600px; margin: 0 auto;">
-                    <img src="fig/res scatter.png" alt="Results Scatter Plot" onerror="this.parentElement.style.display='none'">
-                    <div class="caption">Scatter plot showing PMR achieves optimal balance between privacy protection and utility preservation.</div>
-                </div>
-            </div>
-
-            <div id="ablation-tab" class="tab-content">
-                <h3 style="margin-bottom: 1.5rem;">Ablation Study: Impact of Components (NTU-60 CV)</h3>
-                <div class="results-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Configuration</th>
-                                <th>M & P</th>
-                                <th>L<sub>smooth</sub></th>
-                                <th>L<sub>latent</sub></th>
-                                <th>Q</th>
-                                <th>MSE ↓</th>
-                                <th>Re-ID ↓</th>
-                                <th>AR ↑</th>
-                            </tr>
-                        </thead>
+                <div id="ra" class="tp">
+                    <h3 style="font-size:1rem;font-weight:600;margin-bottom:1.25rem">Ablation Study &mdash; NTU-60 CV</h3>
+                    <div class="tw" style="overflow-x:auto"><table>
+                        <thead><tr><th>Configuration</th><th>M &amp; P</th><th>L<sub>smooth</sub></th><th>L<sub>latent</sub></th><th>Q</th><th>MSE &darr;</th><th>Re-ID &darr;</th><th>AR &uarr;</th></tr></thead>
                         <tbody>
-                            <tr>
-                                <td><strong>DMR (Baseline)</strong></td>
-                                <td>✗</td>
-                                <td>✗</td>
-                                <td>✗</td>
-                                <td>✗</td>
-                                <td class="highlight">0.0060</td>
-                                <td>25.7%</td>
-                                <td class="highlight">49.1%</td>
-                            </tr>
-                            <tr style="border-top: 2px solid var(--border);">
-                                <td><strong>PMR w/o M & P</strong></td>
-                                <td>✗</td>
-                                <td>✓</td>
-                                <td>✓</td>
-                                <td>✓</td>
-                                <td>0.0081</td>
-                                <td>15.8%</td>
-                                <td>37.5%</td>
-                            </tr>
-                            <tr>
-                                <td><strong>PMR w/o L<sub>smooth</sub></strong></td>
-                                <td>✓</td>
-                                <td>✗</td>
-                                <td>✓</td>
-                                <td>✓</td>
-                                <td>0.0117</td>
-                                <td>13.6%</td>
-                                <td>27.4%</td>
-                            </tr>
-                            <tr>
-                                <td><strong>PMR w/o L<sub>latent</sub></strong></td>
-                                <td>✓</td>
-                                <td>✓</td>
-                                <td>✗</td>
-                                <td>✓</td>
-                                <td>0.0144</td>
-                                <td>12.6%</td>
-                                <td>32.6%</td>
-                            </tr>
-                            <tr>
-                                <td><strong>PMR w/o Q</strong></td>
-                                <td>✓</td>
-                                <td>✓</td>
-                                <td>✓</td>
-                                <td>✗</td>
-                                <td>0.0139</td>
-                                <td>9.3%</td>
-                                <td>29.6%</td>
-                            </tr>
-                            <tr style="background: rgba(99, 102, 241, 0.1); border-top: 2px solid var(--accent-primary);">
-                                <td><strong>PMR (Full)</strong></td>
-                                <td>✓</td>
-                                <td>✓</td>
-                                <td>✓</td>
-                                <td>✓</td>
-                                <td>0.0138</td>
-                                <td class="highlight">7.8%</td>
-                                <td class="highlight">35.6%</td>
-                            </tr>
+                            <tr><td><strong>DMR (Baseline)</strong></td><td>&cross;</td><td>&cross;</td><td>&cross;</td><td>&cross;</td><td class="hl">0.0060</td><td>25.7%</td><td class="hl">49.1%</td></tr>
+                            <tr><td><strong>PMR w/o M &amp; P</strong></td><td>&cross;</td><td>&check;</td><td>&check;</td><td>&check;</td><td>0.0081</td><td>15.8%</td><td>37.5%</td></tr>
+                            <tr><td><strong>PMR w/o L<sub>smooth</sub></strong></td><td>&check;</td><td>&cross;</td><td>&check;</td><td>&check;</td><td>0.0117</td><td>13.6%</td><td>27.4%</td></tr>
+                            <tr><td><strong>PMR w/o L<sub>latent</sub></strong></td><td>&check;</td><td>&check;</td><td>&cross;</td><td>&check;</td><td>0.0144</td><td>12.6%</td><td>32.6%</td></tr>
+                            <tr><td><strong>PMR w/o Q</strong></td><td>&check;</td><td>&check;</td><td>&check;</td><td>&cross;</td><td>0.0139</td><td>9.3%</td><td>29.6%</td></tr>
+                            <tr class="hr"><td><strong>PMR (Full)</strong></td><td>&check;</td><td>&check;</td><td>&check;</td><td>&check;</td><td>0.0138</td><td class="hl">7.8%</td><td class="hl">35.6%</td></tr>
                         </tbody>
-                    </table>
-                </div>
-                <div style="margin-top: 2rem;">
-                    <h4 style="margin-bottom: 1rem;">Key Insights</h4>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
-                        <div style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid #6366f1; padding: 1rem; border-radius: 8px;">
-                            <h5 style="margin: 0 0 0.5rem 0; color: #6366f1; font-size: 0.95rem;">Adversarial Training Critical</h5>
-                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Removing M & P classifiers increases re-ID from 7.8% to 15.8%, showing adversarial training is essential for privacy.</p>
-                        </div>
-                        <div style="background: rgba(139, 92, 246, 0.1); border-left: 4px solid #8b5cf6; padding: 1rem; border-radius: 8px;">
-                            <h5 style="margin: 0 0 0.5rem 0; color: #8b5cf6; font-size: 0.95rem;">Smoothness Loss Matters</h5>
-                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Without L_smooth, action recognition drops to 27.4%, indicating smoothness is critical for temporal coherence.</p>
-                        </div>
-                        <div style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; padding: 1rem; border-radius: 8px;">
-                            <h5 style="margin: 0 0 0.5rem 0; color: #10b981; font-size: 0.95rem;">Latent Consistency Helps</h5>
-                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Removing L_latent increases re-ID to 12.6%, showing it helps maintain the privacy-utility balance.</p>
-                        </div>
-                        <div style="background: rgba(239, 68, 68, 0.1); border-left: 4px solid #ef4444; padding: 1rem; border-radius: 8px;">
-                            <h5 style="margin: 0 0 0.5rem 0; color: #ef4444; font-size: 0.95rem;">Quality Controller Improves Realism</h5>
-                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Without Q, re-ID increases to 9.3%, showing the quality controller helps prevent identity leakage.</p>
-                        </div>
+                    </table></div>
+                    <div class="fgrid" style="margin-top:2rem">
+                        <div class="fcard teal"><h4>Adversarial Training Critical</h4><p>Removing M &amp; P increases re-ID from 7.8% to 15.8%.</p></div>
+                        <div class="fcard violet"><h4>Smoothness Loss Matters</h4><p>Without L<sub>smooth</sub>, action recognition drops to 27.4%.</p></div>
+                        <div class="fcard amber"><h4>Latent Consistency Helps</h4><p>Removing L<sub>latent</sub> increases re-ID to 12.6%.</p></div>
+                        <div class="fcard rose"><h4>Quality Controller Improves Realism</h4><p>Without Q, re-ID increases to 9.3%.</p></div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Usage Section -->
-        <section id="usage">
-            <h2 class="section-title">Getting Started</h2>
-            <p class="section-subtitle">Quick start guide and usage examples</p>
+        <div class="divider"></div>
 
-            <div class="tabs">
-                <button class="tab active" onclick="switchTab(event, 'install-tab')">Installation</button>
-                <button class="tab" onclick="switchTab(event, 'train-tab')">Training</button>
-                <button class="tab" onclick="switchTab(event, 'eval-tab')">Evaluation</button>
-                <button class="tab" onclick="switchTab(event, 'api-tab')">Python API</button>
-            </div>
+        <!-- Usage -->
+        <section id="usage" class="section">
+            <p class="section-label reveal">Getting Started</p>
+            <h2 class="section-title reveal rd1">Quick start guide</h2>
+            <p class="section-desc reveal rd2">Install, train, evaluate, and integrate PMR into your projects.</p>
+            <div class="reveal rd3">
+                <div class="tabs-nav"><button class="tab-btn active" onclick="stab(event,'ui')">Installation</button><button class="tab-btn" onclick="stab(event,'ut')">Training</button><button class="tab-btn" onclick="stab(event,'ue')">Evaluation</button><button class="tab-btn" onclick="stab(event,'ua')">Python API</button></div>
 
-            <div id="install-tab" class="tab-content active">
-                <h3 style="margin-bottom: 1rem;">Installation</h3>
-                <div class="code-block">
+                <div id="ui" class="tp active">
+                    <div class="cb"><button class="cpb" onclick="cpc(this)" aria-label="Copy"><i class="fas fa-copy"></i></button>
 <pre># Clone the repository
 git clone https://github.com/Thomasc33/Privacy-Retargeting.git
 cd Privacy-Retargeting
 
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate
 
 # Install dependencies
-pip install -r requirements.txt</pre>
-                </div>
-
-                <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Requirements</h3>
-                <div class="card-grid">
-                    <div class="card">
-                        <h4>Python 3.8+</h4>
-                        <p>Modern Python version with type hints support</p>
-                    </div>
-                    <div class="card">
-                        <h4>PyTorch 2.0+</h4>
-                        <p>Deep learning framework with CUDA support</p>
-                    </div>
-                    <div class="card">
-                        <h4>CUDA 11.8+</h4>
-                        <p>For GPU acceleration (optional but recommended)</p>
+pip install -r requirements.txt</pre></div>
+                    <h3 style="font-size:1rem;font-weight:600;margin:2rem 0 1rem">Requirements</h3>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:12px;overflow:hidden">
+                        <div style="background:var(--bg-surface);padding:1.25rem;transition:var(--transition-theme)"><strong style="font-size:0.9rem">Python 3.8+</strong><p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem">Modern Python with type hints</p></div>
+                        <div style="background:var(--bg-surface);padding:1.25rem;transition:var(--transition-theme)"><strong style="font-size:0.9rem">PyTorch 2.0+</strong><p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem">Deep learning with CUDA support</p></div>
+                        <div style="background:var(--bg-surface);padding:1.25rem;transition:var(--transition-theme)"><strong style="font-size:0.9rem">CUDA 11.8+</strong><p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem">GPU acceleration (recommended)</p></div>
                     </div>
                 </div>
-            </div>
 
-            <div id="train-tab" class="tab-content">
-                <h3 style="margin-bottom: 1rem;">Training PMR Model</h3>
-                <div class="code-block">
+                <div id="ut" class="tp">
+                    <div class="cb"><button class="cpb" onclick="cpc(this)" aria-label="Copy"><i class="fas fa-copy"></i></button>
 <pre># Basic training on NTU-60
 python cli.py train --dataset ntu60 --model pmr
 
@@ -1076,28 +548,13 @@ python cli.py train \
 # Training on NTU-120
 python cli.py train --dataset ntu120 --model pmr
 
-# Training DMR baseline (without adversarial learning)
-python cli.py train --dataset ntu60 --model dmr</pre>
+# Training DMR baseline
+python cli.py train --dataset ntu60 --model dmr</pre></div>
+                    <p style="font-size:0.85rem;color:var(--text-muted);margin-top:1.25rem;line-height:1.6">4 stages, ~295 epochs total. Training time: <strong style="color:var(--text)">~6.5 hours</strong> on NVIDIA RTX 3090.</p>
                 </div>
 
-                <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Training Stages</h3>
-                <div class="card">
-                    <p>PMR training consists of 4 stages totaling ~295 epochs:</p>
-                    <ul style="margin-top: 1rem; margin-left: 1.5rem; color: var(--text-secondary);">
-                        <li><strong>Stage 1:</strong> Autoencoder warm-up (25 epochs)</li>
-                        <li><strong>Stage 2:</strong> Classifier pre-training (70 epochs)</li>
-                        <li><strong>Stage 3:</strong> Adversarial training (100 epochs)</li>
-                        <li><strong>Stage 4:</strong> Motion retargeting (100 epochs)</li>
-                    </ul>
-                    <p style="margin-top: 1rem; color: var(--text-secondary);">
-                        Training takes approximately 6.5 hours on an NVIDIA RTX 3090 GPU.
-                    </p>
-                </div>
-            </div>
-
-            <div id="eval-tab" class="tab-content">
-                <h3 style="margin-bottom: 1rem;">Evaluation</h3>
-                <div class="code-block">
+                <div id="ue" class="tp">
+                    <div class="cb"><button class="cpb" onclick="cpc(this)" aria-label="Copy"><i class="fas fa-copy"></i></button>
 <pre># Evaluate trained model
 python cli.py evaluate \
     --model-path checkpoints/pmr_best.pt \
@@ -1119,28 +576,11 @@ python cli.py visualize \
 python cli.py compare \
     --original data/sample.pkl \
     --anonymized data/anonymized.pkl \
-    --output comparison.gif</pre>
+    --output comparison.gif</pre></div>
                 </div>
 
-                <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Evaluation Metrics</h3>
-                <div class="card-grid">
-                    <div class="card">
-                        <h4>Utility Metrics</h4>
-                        <p><strong>MSE:</strong> Reconstruction quality<br>
-                        <strong>Action Recognition:</strong> Top-1 and Top-5 accuracy</p>
-                    </div>
-                    <div class="card">
-                        <h4>Privacy Metrics</h4>
-                        <p><strong>Re-identification:</strong> Top-1 and Top-5 accuracy<br>
-                        <strong>Gender Classification:</strong> Binary accuracy<br>
-                        <strong>Linkage Attack:</strong> Matching accuracy</p>
-                    </div>
-                </div>
-            </div>
-
-            <div id="api-tab" class="tab-content">
-                <h3 style="margin-bottom: 1rem;">Python API</h3>
-                <div class="code-block">
+                <div id="ua" class="tp">
+                    <div class="cb"><button class="cpb" onclick="cpc(this)" aria-label="Copy"><i class="fas fa-copy"></i></button>
 <pre>from models.pmr import PMRModel
 import torch
 
@@ -1160,343 +600,111 @@ with torch.no_grad():
 # Get embeddings for analysis
 motion_emb, privacy_emb = model.get_embeddings(original)
 
-print(f"Motion embedding shape: {motion_emb.shape}")
-print(f"Privacy embedding shape: {privacy_emb.shape}")
-print(f"Anonymized skeleton shape: {anonymized.shape}")</pre>
-                </div>
-
-                <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Configuration</h3>
-                <div class="code-block">
-<pre>from configs.default_config import Config
-
-# Load default config
-config = Config()
-
-# Customize parameters
-config.training.batch_size = 64
-config.training.lr = 5e-5
-config.training.alpha_emb = 1.0  # Increase adversarial strength
-
-# Use custom config in training
-from training.trainer import PMRTrainer
-trainer = PMRTrainer(config)
-trainer.train()</pre>
+print(f"Motion embedding: {motion_emb.shape}")
+print(f"Privacy embedding: {privacy_emb.shape}")
+print(f"Anonymized skeleton: {anonymized.shape}")</pre></div>
                 </div>
             </div>
         </section>
 
-        <!-- Implementation Details -->
-        <section id="implementation">
-            <h2 class="section-title">Implementation Details</h2>
-            <p class="section-subtitle">Technical specifications from the paper</p>
+        <div class="divider"></div>
 
-            <div class="card-grid">
-                <div class="card">
-                    <h3>Hardware</h3>
-                    <p><strong>GPU:</strong> NVIDIA RTX 3090 (24GB)<br>
-                    <strong>Training Time:</strong> ~6.5 hours<br>
-                    <strong>Inference:</strong> 0.006s per sequence</p>
-                </div>
-                <div class="card">
-                    <h3>Framework</h3>
-                    <p><strong>Deep Learning:</strong> PyTorch 2.0+<br>
-                    <strong>Optimization:</strong> Adam optimizer<br>
-                    <strong>Learning Rate:</strong> 1e-5</p>
-                </div>
-                <div class="card">
-                    <h3>Data</h3>
-                    <p><strong>Datasets:</strong> NTU RGB+D 60/120<br>
-                    <strong>Sequence Length:</strong> 75 frames<br>
-                    <strong>Joints:</strong> 25 per skeleton</p>
-                </div>
-                <div class="card">
-                    <h3>Architecture</h3>
-                    <p><strong>Encoders:</strong> 4-layer CNN<br>
-                    <strong>Decoder:</strong> 4-layer Transpose CNN<br>
-                    <strong>Embedding:</strong> 256 × 32</p>
-                </div>
+        <!-- Implementation -->
+        <section id="implementation" class="section">
+            <p class="section-label reveal">Details</p>
+            <h2 class="section-title reveal rd1">Implementation specifications</h2>
+            <p class="section-desc reveal rd2">Technical specifications from the paper.</p>
+            <div class="spg reveal rd3">
+                <div class="spc"><h4>Hardware</h4><p><strong>GPU:</strong> NVIDIA RTX 3090 (24GB)<br><strong>Training:</strong> ~6.5 hours<br><strong>Inference:</strong> 0.006s per sequence</p></div>
+                <div class="spc"><h4>Framework</h4><p><strong>Deep Learning:</strong> PyTorch 2.0+<br><strong>Optimization:</strong> Adam optimizer<br><strong>Learning Rate:</strong> 1e-5</p></div>
+                <div class="spc"><h4>Data</h4><p><strong>Datasets:</strong> NTU RGB+D 60/120<br><strong>Sequence:</strong> 75 frames<br><strong>Joints:</strong> 25 per skeleton</p></div>
+                <div class="spc"><h4>Architecture</h4><p><strong>Encoders:</strong> 4-layer CNN<br><strong>Decoder:</strong> 4-layer Transpose CNN<br><strong>Embedding:</strong> 256 &times; 32</p></div>
             </div>
-
-            <h3 style="margin-top: 3rem; margin-bottom: 1rem;">Loss Function Weights</h3>
-            <div class="results-table">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Loss Component</th>
-                            <th>Weight (α)</th>
-                            <th>Purpose</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Reconstruction</td>
-                            <td>2.0</td>
-                            <td>Ensure accurate skeleton reconstruction</td>
-                        </tr>
-                        <tr>
-                            <td>Smoothness</td>
-                            <td>3.0</td>
-                            <td>Temporal consistency between frames</td>
-                        </tr>
-                        <tr>
-                            <td>Cross-reconstruction</td>
-                            <td>0.1</td>
-                            <td>Motion transfer quality</td>
-                        </tr>
-                        <tr>
-                            <td>Triplet</td>
-                            <td>1.0</td>
-                            <td>Embedding space structure</td>
-                        </tr>
-                        <tr>
-                            <td>Latent Consistency</td>
-                            <td>10.0</td>
-                            <td>Consistent embeddings across views</td>
-                        </tr>
-                        <tr>
-                            <td>End-effector</td>
-                            <td>1.0</td>
-                            <td>Preserve hand/foot positions</td>
-                        </tr>
-                        <tr>
-                            <td>Adversarial (Embedding)</td>
-                            <td>0.5</td>
-                            <td>Disentangle motion and identity</td>
-                        </tr>
-                        <tr>
-                            <td>Quality Controller</td>
-                            <td>0.5</td>
-                            <td>Realistic skeleton generation</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+            <h3 style="font-size:1rem;font-weight:600;margin:2.5rem 0 1rem" class="reveal">Loss Function Weights</h3>
+            <div class="tw reveal" style="overflow-x:auto"><table>
+                <thead><tr><th>Loss Component</th><th>Weight (&alpha;)</th><th>Purpose</th></tr></thead>
+                <tbody>
+                    <tr><td>Reconstruction</td><td>2.0</td><td>Accurate skeleton reconstruction</td></tr>
+                    <tr><td>Smoothness</td><td>3.0</td><td>Temporal consistency between frames</td></tr>
+                    <tr><td>Cross-reconstruction</td><td>0.1</td><td>Motion transfer quality</td></tr>
+                    <tr><td>Triplet</td><td>1.0</td><td>Embedding space structure</td></tr>
+                    <tr><td>Latent Consistency</td><td>10.0</td><td>Consistent embeddings across views</td></tr>
+                    <tr><td>End-effector</td><td>1.0</td><td>Preserve hand/foot positions</td></tr>
+                    <tr><td>Adversarial</td><td>0.5</td><td>Disentangle motion and identity</td></tr>
+                    <tr><td>Quality Controller</td><td>0.5</td><td>Realistic skeleton generation</td></tr>
+                </tbody>
+            </table></div>
         </section>
 
-        <!-- Citation Section -->
-        <section id="citation" style="margin-top: 4rem;">
-            <h2 class="section-title">Citation</h2>
-            <p class="section-subtitle">If you use this work in your research, please cite our ICCV 2025 paper</p>
+        <div class="divider"></div>
 
-            <div style="margin-top: 2rem;">
-                <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; position: relative;">
-                    <button onclick="copyBibtex()" style="position: absolute; top: 1rem; right: 1rem; background: var(--accent-primary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.875rem; transition: all 0.3s ease;">
-                        <i class="fas fa-copy"></i> Copy BibTeX
-                    </button>
-                    <pre id="bibtex-code" style="margin: 0; padding: 1rem; background: rgba(0, 0, 0, 0.3); border-radius: 8px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 0.875rem; line-height: 1.6; color: var(--text-primary);"><code>@InProceedings{Carr_2025_ICCV,
+        <!-- Citation -->
+        <section id="citation" class="section">
+            <p class="section-label reveal">Citation</p>
+            <h2 class="section-title reveal rd1">Cite this work</h2>
+            <p class="section-desc reveal rd2">If you use PMR in your research, please cite our ICCV 2025 paper.</p>
+            <div class="cit-block reveal rd3">
+                <button class="cit-copy" onclick="cpb(this)"><i class="fas fa-copy"></i> Copy BibTeX</button>
+<pre id="bib">@InProceedings{Carr_2025_ICCV,
     author    = {Carr, Thomas and Xu, Depeng and Yuan, Shuhan and Lu, Aidong},
-    title     = {Privacy-centric Deep Motion Retargeting for Anonymization of Skeleton-Based Motion Visualization},
-    booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+    title     = {Privacy-centric Deep Motion Retargeting for Anonymization
+                 of Skeleton-Based Motion Visualization},
+    booktitle = {Proceedings of the IEEE/CVF International Conference
+                 on Computer Vision (ICCV)},
     month     = {October},
     year      = {2025},
     pages     = {13162-13170}
-}</code></pre>
-                </div>
-
-                <div style="margin-top: 2rem; padding: 1.5rem; background: rgba(99, 102, 241, 0.1); border-left: 4px solid var(--accent-primary); border-radius: 8px;">
-                    <h4 style="margin: 0 0 0.5rem 0; color: var(--accent-primary);">
-                        <i class="fas fa-book"></i> Publication Details
-                    </h4>
-                    <p style="margin: 0.5rem 0; color: var(--text-secondary);">
-                        <strong>Conference:</strong> IEEE/CVF International Conference on Computer Vision (ICCV) 2025
-                    </p>
-                    <p style="margin: 0.5rem 0; color: var(--text-secondary);">
-                        <strong>Pages:</strong> 13162-13170
-                    </p>
-                    <p style="margin: 0.5rem 0; color: var(--text-secondary);">
-                        <strong>Date:</strong> October 2025
-                    </p>
-                    <p style="margin: 0.5rem 0;">
-                        <a href="https://openaccess.thecvf.com/content/ICCV2025/papers/Carr_Privacy-centric_Deep_Motion_Retargeting_for_Anonymization_of_Skeleton-Based_Motion_Visualization_ICCV_2025_paper.pdf" target="_blank" style="color: var(--accent-primary); text-decoration: none;">
-                            <i class="fas fa-external-link-alt"></i> View on CVF Open Access
-                        </a>
-                    </p>
+}</pre>
+                <div class="pub-d">
+                    <p><strong>Conference:</strong> IEEE/CVF International Conference on Computer Vision (ICCV) 2025</p>
+                    <p><strong>Pages:</strong> 13162&ndash;13170</p>
+                    <p style="margin-top:0.5rem"><a href="https://openaccess.thecvf.com/content/ICCV2025/papers/Carr_Privacy-centric_Deep_Motion_Retargeting_for_Anonymization_of_Skeleton-Based_Motion_Visualization_ICCV_2025_paper.pdf" target="_blank" style="font-weight:500"><i class="fas fa-external-link-alt" style="font-size:0.75rem"></i> View on CVF Open Access</a></p>
                 </div>
             </div>
         </section>
-    </div>
+    </main>
 
-    <!-- Footer -->
-    <footer>
-        <div style="max-width: 1200px; margin: 0 auto;">
-            <h3 style="margin-bottom: 1rem;">Privacy-centric Motion Retargeting</h3>
-            <p style="margin-bottom: 2rem;">Anonymizing skeleton-based motion data while preserving action utility</p>
-
-            <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; flex-wrap: wrap;">
-                <a href="https://github.com/Thomasc33/Privacy-Retargeting" style="color: var(--text-secondary); text-decoration: none;">
-                    <i class="fab fa-github"></i> GitHub
-                </a>
-                <a href="https://openaccess.thecvf.com/content/ICCV2025/papers/Carr_Privacy-centric_Deep_Motion_Retargeting_for_Anonymization_of_Skeleton-Based_Motion_Visualization_ICCV_2025_paper.pdf" style="color: var(--text-secondary); text-decoration: none;">
-                    <i class="fas fa-file-alt"></i> Paper
-                </a>
-                <a href="mailto:depeng.xu@charlotte.edu" style="color: var(--text-secondary); text-decoration: none;">
-                    <i class="fas fa-envelope"></i> Contact
-                </a>
-            </div>
-
-            <p style="font-size: 0.875rem;">
-                © 2025 Thomas Carr, Depeng Xu, Shuhan Yuan, Aidong Lu
-            </p>
-            <p style="font-size: 0.875rem; margin-top: 0.5rem;">
-                University of North Carolina at Charlotte
-            </p>
+    <footer><div class="footer-inner">
+        <div class="fl">
+            <a href="https://github.com/Thomasc33/Privacy-Retargeting" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+            <a href="https://openaccess.thecvf.com/content/ICCV2025/papers/Carr_Privacy-centric_Deep_Motion_Retargeting_for_Anonymization_of_Skeleton-Based_Motion_Visualization_ICCV_2025_paper.pdf" target="_blank"><i class="fas fa-file-alt"></i> Paper</a>
+            <a href="mailto:depeng.xu@charlotte.edu"><i class="fas fa-envelope"></i> Contact</a>
         </div>
-    </footer>
+        <p class="fc-copy">&copy; 2025 Thomas Carr, Depeng Xu, Shuhan Yuan, Aidong Lu &middot; UNC Charlotte</p>
+    </div></footer>
 
     <script>
-        // Tab switching function
-        function switchTab(event, tabId) {
-            // Get the parent section
-            const section = document.getElementById(tabId).closest('section');
+    // Theme
+    function gpt(){var s=localStorage.getItem('pmr-theme');if(s)return s;return window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark'}
+    function st(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('pmr-theme',t);var i=t==='light'?'fa-moon':'fa-sun';document.getElementById('ti').className='fas '+i;document.getElementById('ti2').className='fas '+i}
+    st(gpt());
+    document.getElementById('dt').onclick=function(){st(document.documentElement.getAttribute('data-theme')==='light'?'dark':'light')};
+    document.getElementById('mobile-theme').onclick=function(){st(document.documentElement.getAttribute('data-theme')==='light'?'dark':'light')};
 
-            // Hide all tab contents in this section
-            const tabContents = section.querySelectorAll('.tab-content');
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-            });
+    // Mobile menu
+    var mm=document.getElementById('mmenu'),mi=document.getElementById('mi');
+    document.getElementById('mt').onclick=function(){var o=mm.classList.toggle('open');mi.className=o?'fas fa-times':'fas fa-bars'};
+    function cmm(){mm.classList.remove('open');mi.className='fas fa-bars'}
 
-            // Remove active class from all tabs in this section
-            const tabs = section.querySelectorAll('.tab');
-            tabs.forEach(tab => {
-                tab.classList.remove('active');
-            });
+    // Tabs
+    function stab(e,id){var s=e.currentTarget.closest('.section')||e.currentTarget.closest('section');s.querySelectorAll('.tp').forEach(function(p){p.classList.remove('active')});s.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active')});document.getElementById(id).classList.add('active');e.currentTarget.classList.add('active')}
 
-            // Show selected tab content
-            document.getElementById(tabId).classList.add('active');
+    // Copy code
+    function cpc(b){var p=b.closest('.cb').querySelector('pre');navigator.clipboard.writeText(p.textContent).then(function(){b.innerHTML='<i class="fas fa-check"></i>';b.style.color='var(--accent)';b.style.borderColor='var(--accent)';setTimeout(function(){b.innerHTML='<i class="fas fa-copy"></i>';b.style.color='';b.style.borderColor=''},2000)})}
 
-            // Add active class to clicked tab
-            event.currentTarget.classList.add('active');
-        }
+    // Copy bibtex
+    function cpb(b){navigator.clipboard.writeText(document.getElementById('bib').textContent).then(function(){b.innerHTML='<i class="fas fa-check"></i> Copied!';b.style.color='var(--accent)';b.style.borderColor='var(--accent)';setTimeout(function(){b.innerHTML='<i class="fas fa-copy"></i> Copy BibTeX';b.style.color='';b.style.borderColor=''},2000)})}
 
-        // Copy BibTeX to clipboard
-        function copyBibtex() {
-            const bibtexCode = document.getElementById('bibtex-code').textContent;
-            const button = event.currentTarget;
+    // Nav scroll
+    var nav=document.getElementById('nav');
+    window.addEventListener('scroll',function(){nav.classList.toggle('scrolled',window.scrollY>40)},{passive:true});
 
-            // Create a temporary textarea to copy from
-            const textarea = document.createElement('textarea');
-            textarea.value = bibtexCode;
-            document.body.appendChild(textarea);
-            textarea.select();
+    // Scroll reveal
+    var ro=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('vis');ro.unobserve(e.target)}})},{threshold:0.08,rootMargin:'0px 0px -40px 0px'});
+    document.querySelectorAll('.reveal').forEach(function(el){ro.observe(el)});
 
-            try {
-                document.execCommand('copy');
-                const originalHTML = button.innerHTML;
-                button.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                button.style.background = '#10b981';
-                setTimeout(() => {
-                    button.innerHTML = originalHTML;
-                    button.style.background = 'var(--accent-primary)';
-                }, 2000);
-            } catch (err) {
-                console.error('Failed to copy:', err);
-                alert('Failed to copy to clipboard');
-            } finally {
-                document.body.removeChild(textarea);
-            }
-        }
-
-        // Smooth scrolling for navigation links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                const href = this.getAttribute('href');
-                if (href !== '#' && href.startsWith('#')) {
-                    e.preventDefault();
-                    const target = document.querySelector(href);
-                    if (target) {
-                        const navHeight = document.querySelector('nav').offsetHeight;
-                        const targetPosition = target.offsetTop - navHeight - 20;
-                        window.scrollTo({
-                            top: targetPosition,
-                            behavior: 'smooth'
-                        });
-                    }
-                }
-            });
-        });
-
-        // Add scroll effect to navigation
-        let lastScroll = 0;
-        const nav = document.querySelector('nav');
-
-        window.addEventListener('scroll', () => {
-            const currentScroll = window.pageYOffset;
-
-            if (currentScroll > 100) {
-                nav.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.3)';
-            } else {
-                nav.style.boxShadow = 'none';
-            }
-
-            lastScroll = currentScroll;
-        });
-
-        // Animate elements on scroll
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }
-            });
-        }, observerOptions);
-
-        // Observe cards and sections
-        document.querySelectorAll('.card, section').forEach(el => {
-            el.style.opacity = '0';
-            el.style.transform = 'translateY(20px)';
-            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-            observer.observe(el);
-        });
-
-        // Add copy button to code blocks
-        document.querySelectorAll('.code-block').forEach(block => {
-            const button = document.createElement('button');
-            button.innerHTML = '<i class="fas fa-copy"></i>';
-            button.style.cssText = `
-                position: absolute;
-                top: 1rem;
-                right: 1rem;
-                background: var(--accent-primary);
-                color: white;
-                border: none;
-                padding: 0.5rem 1rem;
-                border-radius: 0.25rem;
-                cursor: pointer;
-                opacity: 0;
-                transition: opacity 0.3s;
-            `;
-
-            block.style.position = 'relative';
-            block.appendChild(button);
-
-            block.addEventListener('mouseenter', () => {
-                button.style.opacity = '1';
-            });
-
-            block.addEventListener('mouseleave', () => {
-                button.style.opacity = '0';
-            });
-
-            button.addEventListener('click', () => {
-                const code = block.querySelector('pre').textContent;
-                navigator.clipboard.writeText(code).then(() => {
-                    button.innerHTML = '<i class="fas fa-check"></i>';
-                    setTimeout(() => {
-                        button.innerHTML = '<i class="fas fa-copy"></i>';
-                    }, 2000);
-                });
-            });
-        });
-
-        // Console easter egg
-        console.log('%cPMR - Privacy-centric Motion Retargeting', 'font-size: 20px; font-weight: bold; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;');
-        console.log('%cInterested in the code? Check out our GitHub: https://github.com/Thomasc33/Privacy-Retargeting', 'font-size: 14px; color: #a1a1aa;');
+    // Smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(function(a){a.addEventListener('click',function(e){var h=this.getAttribute('href');if(h!=='#'&&h.startsWith('#')){e.preventDefault();var t=document.querySelector(h);if(t)t.scrollIntoView({behavior:'smooth'})}})});
     </script>
 </body>
 </html>
